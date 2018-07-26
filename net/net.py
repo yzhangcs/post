@@ -82,7 +82,7 @@ class Network(nn.Module):
             elif epoch - max_e > interval:
                 break
         print(f"max accuracy of dev is {max_accuracy:.2%} at epoch {max_e}")
-        print(f"mean time of each epoch is {total_time / (epoch + 1)}s")
+        print(f"mean time of each epoch is {total_time / (epoch + 1)}s\n")
 
     def evaluate(self, data):
         # 设置为评价模式

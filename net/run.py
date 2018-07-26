@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 from config import Config
 from corpus import Corpus
+from net import Network
 
 # 解析命令参数
 parser = argparse.ArgumentParser(
@@ -20,12 +21,8 @@ parser.add_argument('--threads', '-t', action='store', dest='threads',
                     default='4', type=int, help='set the max num of threads')
 args = parser.parse_args()
 
-
-from net import Network
-
 # 设置最大线程数
 torch.set_num_threads(args.threads)
-
 
 if __name__ == '__main__':
     # 根据参数读取配置
@@ -74,13 +71,16 @@ if __name__ == '__main__':
           f"\tbatch_size: {config.batch_size}\n"
           f"\tinterval: {config.interval}\n"
           f"\teta: {config.eta}\n"
-          f"\tlmbda: {config.lmbda:f}\n")
+          f"\tlmbda: {config.lmbda}\n")
     net.fit(train_data, dev_data, file,
             epochs=config.epochs,
             batch_size=config.batch_size,
             interval=config.interval,
             eta=config.eta,
             lmbda=config.lmbda)
+
+    # 载入训练好的模型
+    net = Network.load(file)
     loss, tp, total, accuracy = net.evaluate(test_data)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
