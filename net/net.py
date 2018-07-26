@@ -15,39 +15,47 @@ class Network(nn.Module):
     def __init__(self, vocdim, embdim, window, hiddim, outdim,
                  lossfn, embed):
         super(Network, self).__init__()
+        # 词汇维度
         self.vocdim = vocdim
+        # 词向量维度
         self.embdim = embdim
+        # 上下文窗口大小
         self.window = window
+        # 隐藏层维度
         self.hiddim = hiddim
+        # 输出层维度
         self.outdim = outdim
-        self.hid = nn.Linear(window * embdim, hiddim)
-        self.out = torch.nn.Linear(hiddim, outdim)
         self.embed = nn.Embedding.from_pretrained(embed, False)
+        self.hid = nn.Linear(window * embdim, hiddim)
+        self.out = nn.Linear(hiddim, outdim)
         self.lossfn = lossfn
+        self.dropout = nn.Dropout()
 
     def forward(self, x):
         x = self.embed(x)
         x = x.view(-1, self.window * self.embdim)
-        x = F.relu(self.hid(x))
-        return F.relu(self.out(x))
+        x = self.dropout(F.relu(self.hid(x)))
+        return self.out(x)
 
-    def train(self, train_data, dev_data, file,
-              epochs, batch_size, interval,
-              eta, lmbda):
+    def fit(self, train_data, dev_data, file,
+            epochs, batch_size, interval,
+            eta, lmbda):
+        # 设置为训练模式
+        self.train()
+
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_accuracy = 0, 0.0
 
-        x, y = train_data
-        trainset = TensorDataset(x, y)
+        trainset = TensorDataset(*train_data)
         train_loader = DataLoader(dataset=trainset,
                                   batch_size=batch_size,
                                   shuffle=True)
         optimizer = optim.Adam(self.parameters(), lr=eta, weight_decay=lmbda)
         for epoch in range(epochs):
             start = datetime.now()
-            for i, (x, y) in enumerate(train_loader):
+            for x, y in train_loader:
                 optimizer.zero_grad()
                 output = self(x)
                 loss = self.lossfn(output, y)
@@ -77,11 +85,15 @@ class Network(nn.Module):
         print(f"mean time of each epoch is {total_time / (epoch + 1)}s")
 
     def evaluate(self, data):
+        # 设置为评价模式
+        self.eval()
+
         x, y = data
         total = len(x)
         output = self.forward(x)
         loss = self.lossfn(output, y)
-        tp = torch.sum(y == torch.argmax(output, dim=1)).item()
+        predict = torch.argmax(output, dim=1)
+        tp = torch.sum(y == predict).item()
         return loss, tp, total, tp / total
 
     def dump(self, file):
