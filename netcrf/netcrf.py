@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
 
 from crf import CRF
 
@@ -42,7 +41,8 @@ class NetCRF(nn.Module):
         return self.out(x)
 
     def fit(self, train_data, dev_data, file,
-            epochs, interval, eta, lmbda):
+            epochs, batch_size, interval,
+            eta, lmbda):
         # 设置为训练模式
         self.train()
 
@@ -56,10 +56,15 @@ class NetCRF(nn.Module):
             start = datetime.now()
 
             random.shuffle(train_data)
-            for x, y in train_data:
+            batches = [train_data[k:k + batch_size]
+                       for k in range(0, len(train_data), batch_size)]
+            for batch in batches:
                 optimizer.zero_grad()
-                output = self(x)
-                loss = self.crf(output, y)
+                x, y, lens = zip(*batch)
+                output = self(torch.cat(x))
+                output = torch.split(output, lens)
+                loss = sum(self.crf(emit, tis) for emit, tis in zip(output, y))
+                loss /= len(y)
                 loss.backward()
                 optimizer.step()
 
@@ -89,12 +94,16 @@ class NetCRF(nn.Module):
         # 设置为评价模式
         self.eval()
 
-        tp, total = 0, 0
-        for x, y in data:
-            output = self.forward(x)
-            loss = self.crf(output, y)
-            tp += torch.sum(y == self.crf.viterbi(output)).item()
-            total += len(x)
+        loss, tp, total = 0, 0, 0
+        x, y, lens = zip(*data)
+        output = self(torch.cat(x))
+        output = torch.split(output, lens)
+
+        for emit, tis in zip(output, y):
+            loss += self.crf(emit, tis)
+            tp += torch.sum(tis == self.crf.viterbi(emit)).item()
+            total += len(emit)
+        loss /= len(y)
         return loss, tp, total, tp / total
 
     def dump(self, file):

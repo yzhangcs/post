@@ -34,7 +34,7 @@ class Corpus(object):
             x = torch.tensor([wis[i:i + window] for i in range(len(tis))],
                              dtype=torch.long)
             y = torch.tensor([ti for ti in tis], dtype=torch.long)
-            data.append((x, y))
+            data.append((x, y, len(y)))
         return data
 
     def size(self):

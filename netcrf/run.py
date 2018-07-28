@@ -64,21 +64,23 @@ if __name__ == '__main__':
                  lossfn=F.cross_entropy,
                  embed=embed)
     print("Using Adam optimizer to train the network")
-    print(f"\tsize of train_data: {len(train_data[0])}\n"
-          f"\tsize of dev_data: {len(dev_data[0])}\n"
+    print(f"\tsize of train_data: {len(train_data)}\n"
+          f"\tsize of dev_data: {len(dev_data)}\n"
           f"\tmax num of threads: {args.threads}\n")
     print(f"\tepochs: {config.epochs}\n"
+          f"\tbatch_size: {config.batch_size}\n"
           f"\tinterval: {config.interval}\n"
           f"\teta: {config.eta}\n"
           f"\tlmbda: {config.lmbda}\n")
     net.fit(train_data, dev_data, file,
             epochs=config.epochs,
+            batch_size=config.batch_size,
             interval=config.interval,
             eta=config.eta,
             lmbda=config.lmbda)
 
     # 载入训练好的模型
-    net = Network.load(file)
+    net = NetCRF.load(file)
     loss, tp, total, accuracy = net.evaluate(test_data)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
