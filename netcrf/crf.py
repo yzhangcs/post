@@ -19,22 +19,22 @@ class CRF(nn.Module):
 
     def forward(self, emit, y):
         T = len(emit)
-        alpha = self.strans + emit[0]
 
+        alpha = self.strans + emit[0]
         for i in range(1, T):
-            scores = torch.transpose(self.trans + emit[i], 0, 1)
+            scores = torch.t(self.trans + emit[i])
             alpha = logsumexp(scores + alpha, dim=1)
         logZ = logsumexp(alpha + self.etrans, dim=0)
         return logZ - self.score(emit, y)
 
     def score(self, emit, y):
         T = len(emit)
+        score = 0
 
-        score = torch.tensor(0, dtype=torch.float)
         score += self.strans[y[0]]
-        for i, (prev, ti) in enumerate(zip(y[:-1], y[1:])):
-            score += self.trans[prev, ti] + emit[i, prev]
-        score += self.etrans[y[-1]] + emit[-1, y[-1]]
+        score += self.trans[y[:-1], y[1:]].sum()
+        score += self.etrans[y[-1]]
+        score += emit.gather(dim=1, index=y.view(-1, 1)).sum()
         return score
 
     def viterbi(self, emit):
@@ -45,9 +45,9 @@ class CRF(nn.Module):
         delta[0] = self.strans + emit[0]
 
         for i in range(1, T):
-            scores = torch.transpose(self.trans + emit[i], 0, 1) + delta[i - 1]
+            scores = torch.t(self.trans + emit[i]) + delta[i - 1]
             delta[i], paths[i] = torch.max(scores, dim=1)
-        prev = torch.argmax(delta[-1])
+        prev = torch.argmax(delta[-1] + self.etrans)
 
         predict = [prev]
         for i in reversed(range(1, T)):
