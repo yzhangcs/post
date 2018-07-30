@@ -12,8 +12,8 @@ class Config(object):
         self.interval = 10
         self.eta = 0.001
         self.lmbda = 0
-        self.ftrain = '../data/train.conll'
-        self.fdev = '../data/dev.conll'
-        self.ftest = '../data/test.conll'
-        self.embed = '../data/base_embeddings.txt'
+        self.ftrain = 'data/train.conll'
+        self.fdev = 'data/dev.conll'
+        self.ftest = 'data/test.conll'
+        self.embed = 'data/base_embeddings.txt'
         self.netpkl = 'net.pkl'

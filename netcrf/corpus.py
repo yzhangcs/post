@@ -5,9 +5,9 @@ import torch
 
 
 class Corpus(object):
-    BOS = '***'
-    EOS = '$$$'
-    UNK = 'UNKNOWN'
+    SOS = '<SOS>'
+    EOS = '<EOS>'
+    UNK = '<UNK>'
 
     def __init__(self, words, tags):
         self.words = words
@@ -15,7 +15,7 @@ class Corpus(object):
 
         self.wdict = {w: i for i, w in enumerate(self.words)}
         self.tdict = {t: i for i, t in enumerate(self.tags)}
-        self.bi = self.wdict[self.BOS]
+        self.si = self.wdict[self.SOS]
         self.ei = self.wdict[self.EOS]
         self.ui = self.wdict[self.UNK]
         self.nw = len(self.words)
@@ -26,14 +26,14 @@ class Corpus(object):
         half = window // 2
         sentences = self.preprocess(fdata)
         for wordseq, tagseq in sentences:
-            wis = [self.wdict[w] if w in self.wdict else self.ui
-                   for w in wordseq]
-            wis = [self.bi] * half + wis + [self.ei] * half
-            tis = [self.tdict[t] if t in self.tdict else -1
-                   for t in tagseq]
-            x = torch.tensor([wis[i:i + window] for i in range(len(tis))],
+            wiseq = [self.wdict[w] if w in self.wdict else self.ui
+                     for w in wordseq]
+            wiseq = [self.si] * half + wiseq + [self.ei] * half
+            tiseq = [self.tdict[t] if t in self.tdict else -1
+                     for t in tagseq]
+            x = torch.tensor([wiseq[i:i + window] for i in range(len(tiseq))],
                              dtype=torch.long)
-            y = torch.tensor([ti for ti in tis], dtype=torch.long)
+            y = torch.tensor([ti for ti in tiseq], dtype=torch.long)
             data.append((x, y, len(y)))
         return data
 

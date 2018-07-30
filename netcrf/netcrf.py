@@ -63,7 +63,7 @@ class NetCRF(nn.Module):
                 x, y, lens = zip(*batch)
                 output = self(torch.cat(x))
                 output = torch.split(output, lens)
-                loss = sum(self.crf(emit, tis) for emit, tis in zip(output, y))
+                loss = sum(self.crf(emit, tiseq) for emit, tiseq in zip(output, y))
                 loss /= len(y)
                 loss.backward()
                 optimizer.step()
@@ -99,9 +99,9 @@ class NetCRF(nn.Module):
         output = self(torch.cat(x))
         output = torch.split(output, lens)
 
-        for emit, tis in zip(output, y):
-            loss += self.crf(emit, tis)
-            tp += torch.sum(tis == self.crf.viterbi(emit)).item()
+        for emit, tiseq in zip(output, y):
+            loss += self.crf(emit, tiseq)
+            tp += torch.sum(tiseq == self.crf.viterbi(emit)).item()
             total += len(emit)
         loss /= len(y)
         return loss, tp, total, tp / total
