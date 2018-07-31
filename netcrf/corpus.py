@@ -67,3 +67,10 @@ class Corpus(object):
         words = list(words)
         embed = torch.FloatTensor(embed)
         return words, embed
+
+    @staticmethod
+    def parse(sentences):
+        wordseqs, tagseqs = zip(*sentences)
+        words = sorted(set(np.hstack(wordseqs)))
+        tags = sorted(set(np.hstack(tagseqs)))
+        return words, tags

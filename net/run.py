@@ -33,10 +33,8 @@ if __name__ == '__main__':
     words, embed = Corpus.get_embed(config.embed)
     # 获取训练数据的句子
     sentences = Corpus.preprocess(config.ftrain)
-    # 获取训练数据的词汇和词性序列
-    wordseqs, tagseqs = zip(*sentences)
     # 获取训练数据的所有不同词性
-    tags = sorted(set(np.hstack(tagseqs)))
+    tags = Corpus.parse(sentences)[1]
     # 以预训练词嵌入的词汇和训练数据的词性为基础建立语料
     corpus = Corpus(words, tags)
 
