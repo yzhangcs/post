@@ -33,10 +33,8 @@ if __name__ == '__main__':
     words, embed = Corpus.get_embed(config.embed)
     # 获取训练数据的句子
     sentences = Corpus.preprocess(config.ftrain)
-    # 获取训练数据的词汇和词性序列
-    wordseqs, tagseqs = zip(*sentences)
     # 获取训练数据的所有不同词性
-    tags = sorted(set(np.hstack(tagseqs)))
+    tags = Corpus.parse(sentences)[1]
     # 以预训练词嵌入的词汇和训练数据的词性为基础建立语料
     corpus = Corpus(words, tags)
 
@@ -47,7 +45,7 @@ if __name__ == '__main__':
     train_data = corpus.load(config.ftrain)
     dev_data = corpus.load(config.fdev)
     test_data = corpus.load(config.ftest)
-    file = args.file if args.file else config.netpkl
+    file = args.file if args.file else config.lstmpkl
 
     start = datetime.now()
     print("Creating Neural Network")
@@ -62,8 +60,8 @@ if __name__ == '__main__':
                lossfn=F.cross_entropy,
                embed=embed)
     print("Using Adam optimizer to train the network")
-    print(f"\tsize of train_data: {len(train_data)}\n"
-          f"\tsize of dev_data: {len(dev_data)}\n"
+    print(f"\tsize of train_data: {len(train_data[0])}\n"
+          f"\tsize of dev_data: {len(dev_data[0])}\n"
           f"\tmax num of threads: {args.threads}\n")
     print(f"\tepochs: {config.epochs}\n"
           f"\tbatch_size: {config.batch_size}\n"
@@ -78,7 +76,7 @@ if __name__ == '__main__':
             lmbda=config.lmbda)
 
     # 载入训练好的模型
-    net = NetCRF.load(file)
+    net = LSTM.load(file)
     loss, tp, total, accuracy = net.evaluate(test_data)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "

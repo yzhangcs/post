@@ -27,13 +27,20 @@ class LSTM(nn.Module):
         self.embed = nn.Embedding.from_pretrained(embed, False)
         self.lstm = nn.LSTM(self.embdim, self.hiddim, batch_first=True)
         self.out = nn.Linear(hiddim, outdim)
+        self.dropout = nn.Dropout()
         self.lossfn = lossfn
 
     def forward(self, x, lens):
         x = self.embed(x)
+        hidden = self.init_hidden(x.size(0))
         x = pack_padded_sequence(x, lens, batch_first=True)
-        x, hidden = self.lstm(x)
-        return self.out(x[0])
+        x, hidden = self.lstm(x, hidden)
+        x = self.dropout(x[0])
+        return self.out(x)
+
+    def init_hidden(self, batch_size):
+        return (nn.init.orthogonal_(torch.zeros(1, batch_size, self.hiddim)),
+                nn.init.orthogonal_(torch.zeros(1, batch_size, self.hiddim)))
 
     def fit(self, train_data, dev_data, file,
             epochs, batch_size, interval,

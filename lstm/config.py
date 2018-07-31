@@ -4,7 +4,6 @@
 class Config(object):
 
     def __init__(self):
-        self.window = 5
         self.embdim = 50
         self.hiddim = 300
         self.epochs = 100
@@ -16,4 +15,4 @@ class Config(object):
         self.fdev = 'data/dev.conll'
         self.ftest = 'data/test.conll'
         self.embed = 'data/base_embeddings.txt'
-        self.netpkl = 'net.pkl'
+        self.lstmpkl = 'lstm.pkl'
