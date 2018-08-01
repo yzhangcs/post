@@ -15,6 +15,7 @@ class Network(nn.Module):
     def __init__(self, vocdim, embdim, window, hiddim, outdim,
                  lossfn, embed):
         super(Network, self).__init__()
+
         # 词汇维度
         self.vocdim = vocdim
         # 词向量维度

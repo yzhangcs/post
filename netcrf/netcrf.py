@@ -17,6 +17,7 @@ class NetCRF(nn.Module):
     def __init__(self, vocdim, embdim, window, hiddim, outdim,
                  lossfn, embed):
         super(NetCRF, self).__init__()
+
         # 词汇维度
         self.vocdim = vocdim
         # 词向量维度

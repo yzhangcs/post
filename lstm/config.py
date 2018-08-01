@@ -4,6 +4,7 @@
 class Config(object):
 
     def __init__(self):
+        self.window = 5
         self.embdim = 50
         self.hiddim = 300
         self.epochs = 100

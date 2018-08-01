@@ -8,6 +8,7 @@ class CRF(nn.Module):
 
     def __init__(self, nt):
         super(CRF, self).__init__()
+
         # 不同的词性个数
         self.nt = nt
         # 句间迁移

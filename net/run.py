@@ -29,12 +29,12 @@ if __name__ == '__main__':
     config = Config()
 
     print("Preprocessing the data")
-    # 获取预训练词嵌入的词汇和嵌入矩阵
-    words, embed = Corpus.get_embed(config.embed)
     # 获取训练数据的句子
     sentences = Corpus.preprocess(config.ftrain)
     # 获取训练数据的所有不同词性
-    tags = Corpus.parse(sentences)[1]
+    words, tags = Corpus.parse(sentences)
+    # 获取预训练词嵌入的词汇和嵌入矩阵
+    words, embed = Corpus.get_embed(config.embed)
     # 以预训练词嵌入的词汇和训练数据的词性为基础建立语料
     corpus = Corpus(words, tags)
 

@@ -15,19 +15,22 @@ from crf import CRF
 
 class LSTMCRF(nn.Module):
 
-    def __init__(self, vocdim, embdim, hiddim, outdim,
+    def __init__(self, vocdim, embdim, window, hiddim, outdim,
                  lossfn, embed):
         super(LSTMCRF, self).__init__()
+
         # 词汇维度
         self.vocdim = vocdim
         # 词向量维度
         self.embdim = embdim
+        # 上下文窗口大小
+        self.window = window
         # 隐藏层维度
         self.hiddim = hiddim
         # 输出层维度
         self.outdim = outdim
         self.embed = nn.Embedding.from_pretrained(embed, False)
-        self.lstm = nn.LSTM(self.embdim * 5, self.hiddim, batch_first=True)
+        self.lstm = nn.LSTM(embdim * window, self.hiddim, batch_first=True)
         self.out = nn.Linear(hiddim, outdim)
         self.crf = CRF(self.outdim)
         self.dropout = nn.Dropout()
