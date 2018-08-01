@@ -31,8 +31,8 @@ class NetCRF(nn.Module):
         self.hid = nn.Linear(window * embdim, hiddim)
         self.out = nn.Linear(hiddim, outdim)
         self.crf = CRF(self.outdim)
-        self.lossfn = lossfn
         self.dropout = nn.Dropout()
+        self.lossfn = lossfn
 
     def forward(self, x):
         x = self.embed(x)
@@ -63,7 +63,8 @@ class NetCRF(nn.Module):
                 x, y, lens = zip(*batch)
                 output = self(torch.cat(x))
                 output = torch.split(output, lens)
-                loss = sum(self.crf(emit, tiseq) for emit, tiseq in zip(output, y))
+                loss = sum(self.crf(emit, tiseq)
+                           for emit, tiseq in zip(output, y))
                 loss /= len(y)
                 loss.backward()
                 optimizer.step()

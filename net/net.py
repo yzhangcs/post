@@ -28,8 +28,8 @@ class Network(nn.Module):
         self.embed = nn.Embedding.from_pretrained(embed, False)
         self.hid = nn.Linear(window * embdim, hiddim)
         self.out = nn.Linear(hiddim, outdim)
-        self.lossfn = lossfn
         self.dropout = nn.Dropout()
+        self.lossfn = lossfn
 
     def forward(self, x):
         x = self.embed(x)
