@@ -22,8 +22,9 @@ class Corpus(object):
         self.nw = len(self.words)
         self.nt = len(self.tags)
 
-    def load(self, fdata):
+    def load(self, fdata, window=5):
         x, y, lens = [], [], []
+        half = window // 2
         # 句子按照长度从大到小有序
         sentences = sorted(self.preprocess(fdata),
                            key=lambda x: len(x[0]),
@@ -31,9 +32,12 @@ class Corpus(object):
         for wordseq, tagseq in sentences:
             wiseq = [self.wdict[w] if w in self.wdict else self.ui
                      for w in wordseq]
+            wiseq = [self.si] * half + wiseq + [self.ei] * half
             tiseq = [self.tdict[t] if t in self.tdict else -1
                      for t in tagseq]
-            x.append(torch.tensor([wi for wi in wiseq], dtype=torch.long))
+            x.append(torch.tensor([wiseq[i:i + window]
+                                   for i in range(len(tiseq))],
+                                  dtype=torch.long))
             y.append(torch.tensor([ti for ti in tiseq], dtype=torch.long))
             lens.append(len(tiseq))
         x = pad_sequence(x, batch_first=True)

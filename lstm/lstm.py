@@ -25,13 +25,15 @@ class LSTM(nn.Module):
         # 输出层维度
         self.outdim = outdim
         self.embed = nn.Embedding.from_pretrained(embed, False)
-        self.lstm = nn.LSTM(self.embdim, self.hiddim, batch_first=True)
+        self.lstm = nn.LSTM(self.embdim * 5, self.hiddim, batch_first=True)
         self.out = nn.Linear(hiddim, outdim)
         self.dropout = nn.Dropout()
         self.lossfn = lossfn
 
     def forward(self, x, lens):
+        B, T, N = x.shape
         x = self.embed(x)
+        x = x.view(B, T, -1)
         hidden = self.init_hidden(x.size(0))
         x = pack_padded_sequence(x, lens, batch_first=True)
         x, hidden = self.lstm(x, hidden)
