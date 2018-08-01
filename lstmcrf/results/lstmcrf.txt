@@ -80,3 +80,24 @@ train: Loss: 0.5469 Accuracy: 1050275 / 1057943 = 99.28%
 dev:   Loss: 9.8374 Accuracy: 55585 / 59955 = 92.71%
 0:11:35.274992s elapsed
 
+Epoch: 12 / 100:
+train: Loss: 0.4604 Accuracy: 1051693 / 1057943 = 99.41%
+dev:   Loss: 10.0014 Accuracy: 55572 / 59955 = 92.69%
+0:11:39.075490s elapsed
+
+Epoch: 13 / 100:
+train: Loss: 0.4383 Accuracy: 1051700 / 1057943 = 99.41%
+dev:   Loss: 10.3838 Accuracy: 55539 / 59955 = 92.63%
+0:11:40.381267s elapsed
+
+Epoch: 14 / 100:
+train: Loss: 0.3839 Accuracy: 1052565 / 1057943 = 99.49%
+dev:   Loss: 10.6327 Accuracy: 55678 / 59955 = 92.87%
+0:12:28.755785s elapsed
+
+max accuracy of dev is 93.19% at epoch 3
+mean time of each epoch is 0:12:05.170238s
+
+test:  Loss: 6.4991 Accuracy: 75843 / 81578 = 92.97%
+3:01:34.940063s elapsed
+

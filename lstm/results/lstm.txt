@@ -1,4 +1,3 @@
-nohup: 忽略输入
 Preprocessing the data
 	sentences: 46572
 	different words: 59294
