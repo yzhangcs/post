@@ -30,11 +30,9 @@ class Corpus(object):
                            key=lambda x: len(x[0]),
                            reverse=True)
         for wordseq, tagseq in sentences:
-            wiseq = [self.wdict[w] if w in self.wdict else self.ui
-                     for w in wordseq]
+            wiseq = [self.wdict.get(w, self.ui) for w in wordseq]
             wiseq = [self.si] * half + wiseq + [self.ei] * half
-            tiseq = [self.tdict[t] if t in self.tdict else -1
-                     for t in tagseq]
+            tiseq = [self.tdict[t] for t in tagseq]
             x.append(torch.tensor([wiseq[i:i + window]
                                    for i in range(len(tiseq))],
                                   dtype=torch.long))

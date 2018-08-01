@@ -26,8 +26,7 @@ class Corpus(object):
         half = window // 2
         sentences = self.preprocess(fdata)
         for wordseq, tagseq in sentences:
-            wiseq = [self.wdict[w] if w in self.wdict else self.ui
-                     for w in wordseq]
+            wiseq = [self.wdict.get(w, self.ui) for w in wordseq]
             wiseq = [self.si] * half + wiseq + [self.ei] * half
             tiseq = [self.tdict[t] for t in tagseq]
             for i, ti in enumerate(tiseq):
