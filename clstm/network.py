@@ -58,7 +58,7 @@ class Network(nn.Module):
                 # 获取长度由大到小排列的词序列索引
                 wlens, indices = wlens.sort(descending=True)
                 maxlen = wlens[0]
-                # 调整序列顺序
+                # 调整序列顺序并去除无用数据
                 cx, clens = cx[indices, :maxlen], clens[indices, :maxlen]
                 wx, y = wx[indices, :maxlen], y[indices, :maxlen]
 
@@ -100,11 +100,17 @@ class Network(nn.Module):
                                   batch_size=batch_size)
         with torch.no_grad():
             for wx, cx, wlens, clens, y in train_loader:
+                maxlen = wlens[0]
+                # 去除无用数据
+                cx, clens = cx[:, :maxlen], clens[:, :maxlen]
+                wx, y = wx[:, :maxlen], y[:, :maxlen]
+
                 output = self(wx, cx, wlens, clens)
                 y = pack_padded_sequence(y, wlens, True).data
                 loss += self.lossfn(output, y, size_average=True)
                 tp += (torch.argmax(output, dim=1) == y).sum().item()
                 total += wlens.sum().item()
+        loss /= total
         return loss, tp, total, tp / total
 
     def dump(self, file):

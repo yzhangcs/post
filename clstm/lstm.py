@@ -24,6 +24,7 @@ class WordLSTM(nn.Module):
         self.hiddim = hiddim
         # 词嵌入
         self.embed = nn.Embedding.from_pretrained(embed, False)
+
         # 词嵌入LSTM层
         self.wlstm = nn.LSTM(wembdim + cembdim, self.hiddim, batch_first=True)
         # 字嵌入LSTM层
@@ -34,8 +35,10 @@ class WordLSTM(nn.Module):
         # 获取词嵌入向量
         wx = self.embed(wx)
         # 获取字嵌入向量
-        cx = self.clstm(cx.view(B * T, -1), clens.view(-1))
-        cx = cx.view(B, T, -1)
+        cx = torch.cat([cx[i, :wl] for i, wl in enumerate(wlens)])
+        clens = torch.cat([clens[i, :wl] for i, wl in enumerate(wlens)])
+        cx = pad_sequence(torch.split(self.clstm(cx, clens), tuple(wlens)),
+                          batch_first=True)
 
         # 拼接词表示和字表示
         x = torch.cat((wx, cx), dim=-1)

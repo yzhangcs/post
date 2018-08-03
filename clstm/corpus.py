@@ -51,7 +51,7 @@ class Corpus(object):
         wx = pad_sequence(wx, batch_first=True)
         cx = pad_sequence(cx, batch_first=True)
         wlens = torch.tensor(wlens)
-        clens = pad_sequence(clens, batch_first=True, padding_value=1)
+        clens = pad_sequence(clens, batch_first=True)
         y = pad_sequence(y, batch_first=True)
         return wx, cx, wlens, clens, y
 
