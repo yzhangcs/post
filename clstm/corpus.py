@@ -33,6 +33,7 @@ class Corpus(object):
         sentences = sorted(self.preprocess(fdata),
                            key=lambda wx: len(wx[0]),
                            reverse=True)
+        # 获取单词最大长度
         maxlen = max(max(len(w) for w in wordseq)
                      for wordseq, tagseq in sentences)
         for wordseq, tagseq in sentences:

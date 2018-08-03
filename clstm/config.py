@@ -4,10 +4,11 @@
 class Config(object):
 
     def __init__(self):
-        self.embdim = 50
+        self.wembdim = 50
+        self.cembdim = 50
         self.hiddim = 300
         self.epochs = 100
-        self.batch_size = 25
+        self.batch_size = 20
         self.interval = 10
         self.eta = 0.001
         self.lmbda = 0

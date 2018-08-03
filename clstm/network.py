@@ -15,15 +15,17 @@ from lstm import WordLSTM
 
 class Network(nn.Module):
 
-    def __init__(self, vocdim, chrdim, embdim,
+    def __init__(self, vocdim, chrdim,
+                 wembdim, cembdim,
                  hiddim, outdim,
                  lossfn, embed):
         super(Network, self).__init__()
 
         # LSTM层
-        self.lstm = WordLSTM(vocdim, chrdim, embdim, hiddim, outdim, embed)
+        self.lstm = WordLSTM(vocdim, chrdim, wembdim, cembdim, hiddim, embed)
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
+
         self.dropout = nn.Dropout()
         self.lossfn = lossfn
 
@@ -55,9 +57,10 @@ class Network(nn.Module):
                 optimizer.zero_grad()
                 # 获取长度由大到小排列的词序列索引
                 wlens, indices = wlens.sort(descending=True)
+                maxlen = wlens[0]
                 # 调整序列顺序
-                wx = wx[indices]
-                cx, clens, y = cx[indices], clens[indices], y[indices]
+                cx, clens = cx[indices, :maxlen], clens[indices, :maxlen]
+                wx, y = wx[indices, :maxlen], y[indices, :maxlen]
 
                 output = self(wx, cx, wlens, clens)
                 y = pack_padded_sequence(y, wlens, True).data
@@ -87,17 +90,21 @@ class Network(nn.Module):
         print(f"max accuracy of dev is {max_accuracy:.2%} at epoch {max_e}")
         print(f"mean time of each epoch is {total_time / (epoch + 1)}s\n")
 
-    def evaluate(self, data):
+    def evaluate(self, data, batch_size=25):
         # 设置为评价模式
         self.eval()
 
         loss, tp, total = 0, 0, 0
-        wx, cx, wlens, clens, y = data
-        output = self(wx, cx, wlens, clens)
-        y = pack_padded_sequence(y, wlens, True).data
-        loss = self.lossfn(output, y)
-        tp = (torch.argmax(output, dim=1) == y).sum().item()
-        total = wlens.sum().item()
+        dataset = TensorDataset(*data)
+        train_loader = DataLoader(dataset=dataset,
+                                  batch_size=batch_size)
+        with torch.no_grad():
+            for wx, cx, wlens, clens, y in train_loader:
+                output = self(wx, cx, wlens, clens)
+                y = pack_padded_sequence(y, wlens, True).data
+                loss += self.lossfn(output, y, size_average=True)
+                tp += (torch.argmax(output, dim=1) == y).sum().item()
+                total += wlens.sum().item()
         return loss, tp, total, tp / total
 
     def dump(self, file):

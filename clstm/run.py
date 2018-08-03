@@ -17,6 +17,8 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('--file', '-f', action='store', dest='file',
                     help='set where to store the model')
+parser.add_argument('--charwise', '-c', action='store_true', default=False,
+                    dest='charwise', help='use character representation')
 parser.add_argument('--threads', '-t', action='store', dest='threads',
                     default='4', type=int, help='set the max num of threads')
 args = parser.parse_args()
@@ -50,12 +52,14 @@ if __name__ == '__main__':
     start = datetime.now()
     print("Creating Neural Network")
     print(f"\tvocdim: {corpus.nw}\n"
-          f"\tembdim: {config.embdim}\n"
+          f"\twembdim: {config.wembdim}\n"
+          f"\tcembdim: {config.cembdim}\n"
           f"\thiddim: {config.hiddim}\n"
           f"\toutdim: {corpus.nt}\n")
     network = Network(vocdim=corpus.nw,
                       chrdim=corpus.nc,
-                      embdim=config.embdim,
+                      wembdim=config.wembdim,
+                      cembdim=config.cembdim,
                       hiddim=config.hiddim,
                       outdim=corpus.nt,
                       lossfn=F.cross_entropy,
