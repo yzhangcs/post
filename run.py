@@ -65,7 +65,8 @@ if __name__ == '__main__':
         print(f"\tvocdim: {corpus.nw}\n"
               f"\tembdim: {config.embdim}\n"
               f"\thiddim: {config.hiddim}\n"
-              f"\toutdim: {corpus.nt}")
+              f"\toutdim: {corpus.nt}\n"
+              f"\tlossfn: {F.cross_entropy.__name__}")
         network = LSTM(vocdim=corpus.nw,
                        embdim=config.embdim,
                        hiddim=config.hiddim,
@@ -81,7 +82,8 @@ if __name__ == '__main__':
               f"\tembdim: {config.embdim}\n"
               f"\tcembdim: {config.cembdim}\n"
               f"\thiddim: {config.hiddim}\n"
-              f"\toutdim: {corpus.nt}")
+              f"\toutdim: {corpus.nt}\n"
+              f"\tlossfn: {F.cross_entropy.__name__}")
         network = LSTM(vocdim=corpus.nw,
                        chrdim=corpus.nc,
                        embdim=config.embdim,
@@ -98,7 +100,8 @@ if __name__ == '__main__':
               f"\twindow: {config.window}\n"
               f"\tembdim: {config.embdim}\n"
               f"\thiddim: {config.hiddim}\n"
-              f"\toutdim: {corpus.nt}")
+              f"\toutdim: {corpus.nt}\n"
+              f"\tlossfn: {F.cross_entropy.__name__}")
         network = BPNN(vocdim=corpus.nw,
                        embdim=config.embdim,
                        window=config.window,
