@@ -10,21 +10,68 @@ class Corpus(object):
     EOS = '<EOS>'
     UNK = '<UNK>'
 
-    def __init__(self, words, tags):
-        self.words = words
-        self.chars = sorted(set(''.join(words)) | {self.UNK})
-        self.tags = tags
+    def __init__(self, fdata):
+        # 获取数据的句子
+        self.sentences = self.preprocess(fdata)
+        # 获取数据的所有不同的词汇、词性和字符
+        self.words, self.tags, self.chars = self.parse(self.sentences)
+        # 增加句首词汇、句尾词汇和未知词汇
+        self.words += [self.SOS, self.EOS, self.UNK]
+        # 增加未知字符
+        self.chars += [self.UNK]
 
+        # 词汇字典
+        self.wdict = {w: i for i, w in enumerate(self.words)}
+        # 词性字典
+        self.tdict = {t: i for i, t in enumerate(self.tags)}
+        # 字符字典
+        self.cdict = {c: i for i, c in enumerate(self.chars)}
+
+        # 句首词汇索引
+        self.swi = self.wdict[self.SOS]
+        # 句尾词汇索引
+        self.ewi = self.wdict[self.EOS]
+        # 未知词汇索引
+        self.uwi = self.wdict[self.UNK]
+        # 未知字符索引
+        self.uci = self.cdict[self.UNK]
+
+        # 句子数量
+        self.ns = len(self.sentences)
+        # 词汇数量
+        self.nw = len(self.words)
+        # 词性数量
+        self.nt = len(self.tags)
+        # 字符数量
+        self.nc = len(self.chars)
+
+    def extend(self, fembed):
+        with open(fembed, 'r') as f:
+            lines = [line for line in f]
+        splits = [line.split() for line in lines]
+        # 获取预训练数据中的词汇和嵌入矩阵
+        words, embed = zip(*[
+            (split[0], list(map(float, split[1:]))) for split in splits
+        ])
+        unk_words = [w for w in words if w not in self.wdict]
+        unk_chars = [c for c in ''.join(unk_words) if c not in self.cdict]
+        # 扩展词汇和字符
+        self.words = sorted(self.words + unk_words)
+        self.chars = sorted(self.words + unk_chars)
         self.wdict = {w: i for i, w in enumerate(self.words)}
         self.cdict = {c: i for i, c in enumerate(self.chars)}
-        self.tdict = {t: i for i, t in enumerate(self.tags)}
         self.swi = self.wdict[self.SOS]
         self.ewi = self.wdict[self.EOS]
         self.uwi = self.wdict[self.UNK]
         self.uci = self.cdict[self.UNK]
         self.nw = len(self.words)
         self.nc = len(self.chars)
-        self.nt = len(self.tags)
+        # 不在预训练矩阵中的词汇的词向量值随机初始化
+        embed = torch.FloatTensor(embed)
+        indices = [self.wdict[w] for w in words]
+        extended_embed = torch.randn(self.nw, embed.size(1))
+        extended_embed[indices] = embed
+        return extended_embed
 
     def load(self, fdata, charwise=False, window=0):
         x, cx, lens, clens, y = [], [], [], [], []
@@ -86,20 +133,9 @@ class Corpus(object):
         return sentences
 
     @staticmethod
-    def get_embed(fembed):
-        with open(fembed, 'r') as f:
-            lines = [line for line in f]
-        splits = [line.split() for line in lines]
-        words, embed = zip(*[
-            (split[0], list(map(float, split[1:]))) for split in splits
-        ])
-        words = list(words)
-        embed = torch.FloatTensor(embed)
-        return words, embed
-
-    @staticmethod
     def parse(sentences):
         wordseqs, tagseqs = zip(*sentences)
         words = sorted(set(np.hstack(wordseqs)))
         tags = sorted(set(np.hstack(tagseqs)))
-        return words, tags
+        chars = sorted(set(''.join(words)))
+        return words, tags, chars

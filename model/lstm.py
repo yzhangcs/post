@@ -71,9 +71,6 @@ class LSTM(nn.Module):
         train_loader = DataLoader(dataset=trainset,
                                   batch_size=batch_size,
                                   shuffle=True)
-        # 设置评价过程数据加载器
-        train_eval_loader = DataLoader(trainset, len(trainset))
-        dev_eval_loader = DataLoader(devset, len(devset))
         # 设置优化器为Adam
         optimizer = optim.Adam(self.parameters(), lr=eta, weight_decay=lmbda)
 
@@ -102,11 +99,11 @@ class LSTM(nn.Module):
                 optimizer.step()
 
             print(f"Epoch: {epoch} / {epochs}:")
-            loss, tp, total, accuracy = self.evaluate(train_eval_loader)
+            loss, tp, total, accuracy = self.evaluate(train_data)
             print(f"{'train:':<6} "
                   f"Loss: {loss:.4f} "
                   f"Accuracy: {tp} / {total} = {accuracy:.2%}")
-            loss, tp, total, accuracy = self.evaluate(dev_eval_loader)
+            loss, tp, total, accuracy = self.evaluate(dev_data)
             print(f"{'dev:':<6} "
                   f"Loss: {loss:.4f} "
                   f"Accuracy: {tp} / {total} = {accuracy:.2%}")
@@ -123,32 +120,28 @@ class LSTM(nn.Module):
         print(f"max accuracy of dev is {max_accuracy:.2%} at epoch {max_e}")
         print(f"mean time of each epoch is {total_time / (epoch + 1)}s\n")
 
-    def evaluate(self, loader):
+    def evaluate(self, data):
         # 设置为评价模式
         self.eval()
 
         loss, tp, total = 0, 0, 0
+        x, lens, y = data
         with torch.no_grad():
-            for x, lens, y in loader:
-                maxlen = lens[0]
-                # 去除无用数据
-                x, y = x[:, :maxlen], y[:, :maxlen]
+            output = self.forward(x, lens)
+            if self.crf is None:
+                output = pack_padded_sequence(output, lens, True).data
+                y = pack_padded_sequence(y, lens, True).data
 
-                output = self.forward(x, lens)
-                if self.crf is None:
-                    output = pack_padded_sequence(output, lens, True).data
-                    y = pack_padded_sequence(y, lens, True).data
-
-                    predict = torch.argmax(output, dim=1)
-                    loss += self.lossfn(output, y, size_average=False)
-                    tp += (predict == y).sum().item()
-                else:
-                    # TODO
-                    for i, length in enumerate(lens):
-                        emit, tiseq = output[i, :length], y[i, :length]
-                        predict = self.crf.viterbi(emit)
-                        loss += self.crf(emit, tiseq)
-                        tp += torch.sum(predict == tiseq).sum().item()
-                total += lens.sum().item()
+                predict = torch.argmax(output, dim=1)
+                loss = self.lossfn(output, y, size_average=False)
+                tp = torch.sum(predict == y).item()
+            else:
+                # TODO
+                for i, length in enumerate(lens):
+                    emit, tiseq = output[i, :length], y[i, :length]
+                    predict = self.crf.viterbi(emit)
+                    loss += self.crf(emit, tiseq)
+                    tp += torch.sum(predict == tiseq).item()
+        total = lens.sum().item()
         loss /= total
         return loss, tp, total, tp / total

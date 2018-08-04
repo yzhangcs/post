@@ -37,16 +37,12 @@ if __name__ == '__main__':
     config = Config(args.lstm)
 
     print("Preprocess the data")
-    # 获取训练数据的句子
-    sentences = Corpus.preprocess(config.ftrain)
-    # 获取训练数据的所有不同词性
-    words, tags = Corpus.parse(sentences)
-    # 获取预训练词嵌入的词汇和嵌入矩阵
-    words, embed = Corpus.get_embed(config.embed)
-    # 以预训练词嵌入的词汇和训练数据的词性为基础建立语料
-    corpus = Corpus(words, tags)
+    # 以训练数据为基础建立语料
+    corpus = Corpus(config.ftrain)
+    # 用预训练词嵌入扩展语料并返回词嵌入矩阵
+    embed = corpus.extend(config.embed)
 
-    print(f"\tsentences: {len(sentences)}\n"
+    print(f"\tsentences: {corpus.ns}\n"
           f"\tdifferent words: {corpus.nw - 3}\n"
           f"\tdifferent tags: {corpus.nt}")
 
@@ -126,10 +122,7 @@ if __name__ == '__main__':
 
     # 载入训练好的模型
     network = torch.load(file)
-    testset = TensorDataset(*test_data)
-    test_eval_loader = DataLoader(dataset=testset,
-                                  batch_size=len(testset))
-    loss, tp, total, accuracy = network.evaluate(test_eval_loader)
+    loss, tp, total, accuracy = network.evaluate(test_data)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
           f"Accuracy: {tp} / {total} = {accuracy:.2%}")
