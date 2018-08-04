@@ -53,11 +53,11 @@ class Corpus(object):
                                       dtype=torch.long))
             y.append(torch.tensor([ti for ti in tiseq], dtype=torch.long))
 
-        x = pad_sequence(x, batch_first=True, padding_value=-1)
-        cx = pad_sequence(cx, batch_first=True, padding_value=-1)
+        x = pad_sequence(x, True)
+        cx = pad_sequence(cx, True)
         lens = torch.tensor(lens)
-        clens = pad_sequence(clens, batch_first=True, padding_value=-1)
-        y = pad_sequence(y, batch_first=True, padding_value=-1)
+        clens = pad_sequence(clens, True)
+        y = pad_sequence(y, True, padding_value=-1)
 
         data = (x, cx, lens, clens, y) if charwise else (x, lens, y)
         return data

@@ -3,15 +3,12 @@
 import argparse
 from datetime import datetime, timedelta
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
 from config import Config
 from corpus import Corpus
-from model.bpnn import BPNN
-from model.lstm import LSTM
 
 if __name__ == '__main__':
     # 解析命令参数
@@ -24,6 +21,8 @@ if __name__ == '__main__':
                         dest='lstm', help='use lstm')
     parser.add_argument('--char', action='store_true', default=False,
                         dest='char', help='use char representation')
+    parser.add_argument('--bidirectional', action='store_true', default=False,
+                        dest='bidirectional', help='use bidirectional lstm')
     parser.add_argument('--file', '-f', action='store', dest='file',
                         help='set where to store the model')
     parser.add_argument('--threads', '-t', action='store', dest='threads',
@@ -61,9 +60,40 @@ if __name__ == '__main__':
 
     start = datetime.now()
     print("Create Neural Network")
-    if args.lstm:
-        pass
+    if args.lstm and not args.char:
+        from model.lstm import LSTM
+        print(f"\tvocdim: {corpus.nw}\n"
+              f"\tembdim: {config.embdim}\n"
+              f"\thiddim: {config.hiddim}\n"
+              f"\toutdim: {corpus.nt}")
+        network = LSTM(vocdim=corpus.nw,
+                       embdim=config.embdim,
+                       hiddim=config.hiddim,
+                       outdim=corpus.nt,
+                       lossfn=F.cross_entropy,
+                       use_crf=args.crf,
+                       bidirectional=args.bidirectional,
+                       pretrained=embed)
+    elif args.lstm and args.char:
+        from model.clstm import LSTM
+        print(f"\tvocdim: {corpus.nw}\n"
+              f"\tchrdim: {corpus.nc}\n"
+              f"\tembdim: {config.embdim}\n"
+              f"\tcembdim: {config.cembdim}\n"
+              f"\thiddim: {config.hiddim}\n"
+              f"\toutdim: {corpus.nt}")
+        network = LSTM(vocdim=corpus.nw,
+                       chrdim=corpus.nc,
+                       embdim=config.embdim,
+                       cembdim=config.cembdim,
+                       hiddim=config.hiddim,
+                       outdim=corpus.nt,
+                       lossfn=F.cross_entropy,
+                       use_crf=args.crf,
+                       bidirectional=args.bidirectional,
+                       pretrained=embed)
     else:
+        from model.bpnn import BPNN
         print(f"\tvocdim: {corpus.nw}\n"
               f"\twindow: {config.window}\n"
               f"\tembdim: {config.embdim}\n"

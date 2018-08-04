@@ -73,15 +73,13 @@ class BPNN(nn.Module):
 
         for epoch in range(epochs):
             start = datetime.now()
-            for x, lens,  y in train_loader:
+            for x, lens, y in train_loader:
                 optimizer.zero_grad()
                 # 获取句子的最大长度
                 maxlen = max(lens)
                 # 去除无用的填充数据
                 x = x[:, :maxlen]
                 y = y[:, :maxlen]
-                # 获取数据掩码
-                mask = torch.ge(y, 0)
 
                 # 打包数据
                 x = torch.cat([x[i, :l] for i, l in enumerate(lens)])
@@ -95,7 +93,6 @@ class BPNN(nn.Module):
                     # TODO
                     loss = sum(self.crf(emit, tiseq)
                                for emit, tiseq in zip(output, y))
-                    loss /= len(y)
                 loss.backward()
                 optimizer.step()
 
@@ -128,21 +125,22 @@ class BPNN(nn.Module):
         loss, tp, total = 0, 0, 0
         with torch.no_grad():
             for x, lens, y in loader:
+                # 打包数据
                 x = torch.cat([x[i, :l] for i, l in enumerate(lens)])
                 y = torch.cat([y[i, :l] for i, l in enumerate(lens)])
 
                 output = self.forward(x)
                 if self.crf is None:
                     predict = torch.argmax(output, dim=1)
-                    total += len(x)
-                    loss += self.lossfn(output, y)
+                    loss += self.lossfn(output, y, size_average=False)
                     tp += torch.sum(y == predict).item()
                 else:
                     output = torch.split(output, lens.tolist())
                     y = torch.split(y, lens.tolist())
                     for emit, tiseq in zip(output, y):
+                        predict = self.crf.viterbi(emit)
                         loss += self.crf(emit, tiseq)
-                        tp += torch.sum(tiseq == self.crf.viterbi(emit)).item()
-                        total += len(emit)
-        loss /= len(loader)
+                        tp += torch.sum(tiseq == predict).item()
+                total += lens.sum().item()
+        loss /= total
         return loss, tp, total, tp / total
