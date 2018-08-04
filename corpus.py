@@ -3,7 +3,6 @@
 import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
-from utils import pad_unsorted_sequence
 
 
 class Corpus(object):
@@ -27,36 +26,48 @@ class Corpus(object):
         self.nc = len(self.chars)
         self.nt = len(self.tags)
 
-    def load(self, fdata):
-        wx, cx, wlens, clens, y = [], [], [], [], []
+    def load(self, fdata, charwise=False, window=0):
+        x, cx, lens, clens, y = [], [], [], [], []
         # 句子按照长度从大到小有序
         sentences = sorted(self.preprocess(fdata),
-                           key=lambda wx: len(wx[0]),
+                           key=lambda x: len(x[0]),
                            reverse=True)
         # 获取单词最大长度
         maxlen = max(max(len(w) for w in wordseq)
                      for wordseq, tagseq in sentences)
         for wordseq, tagseq in sentences:
             wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
-            tiseq = [self.tdict.get(t, -1) for t in tagseq]
-            wx.append(torch.tensor([wi for wi in wiseq], dtype=torch.long))
+            tiseq = [self.tdict.get(t, -1) for t in tagseq]  # TODO
+            if window > 0:
+                x.append(self.get_context(wiseq, window))
+            else:
+                x.append(torch.tensor([wi for wi in wiseq], dtype=torch.long))
+            # 不足最大长度的部分用0填充
             cx.append(torch.tensor([
                 [self.cdict.get(c, self.uci)
-                 for c in w] + [0] * (maxlen - len(w))
+                    for c in w] + [0] * (maxlen - len(w))
                 for w in wordseq
             ]))
-            wlens.append(len(tiseq))
-            clens.append(torch.tensor([len(w) for w in wordseq]))
+            lens.append(len(tiseq))
+            clens.append(torch.tensor([len(w) for w in wordseq],
+                                      dtype=torch.long))
             y.append(torch.tensor([ti for ti in tiseq], dtype=torch.long))
-        wx = pad_sequence(wx, batch_first=True)
-        cx = pad_sequence(cx, batch_first=True)
-        wlens = torch.tensor(wlens)
-        clens = pad_sequence(clens, batch_first=True)
-        y = pad_sequence(y, batch_first=True)
-        return wx, cx, wlens, clens, y
 
-    def size(self):
-        return self.nw - 3, self.nt
+        x = pad_sequence(x, batch_first=True, padding_value=-1)
+        cx = pad_sequence(cx, batch_first=True, padding_value=-1)
+        lens = torch.tensor(lens)
+        clens = pad_sequence(clens, batch_first=True, padding_value=-1)
+        y = pad_sequence(y, batch_first=True, padding_value=-1)
+
+        data = (x, cx, lens, clens, y) if charwise else (x, lens, y)
+        return data
+
+    def get_context(self, wiseq, window):
+        half = window // 2
+        length = len(wiseq)
+        wiseq = [self.swi] * half + wiseq + [self.ewi] * half
+        return torch.tensor([wiseq[i:i + window] for i in range(length)],
+                            dtype=torch.long)
 
     @staticmethod
     def preprocess(fdata):

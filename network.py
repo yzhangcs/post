@@ -10,42 +10,41 @@ import torch.optim as optim
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch.utils.data import DataLoader, TensorDataset
 
+from model.lstm import LSTM
+from model.bpnn import BPNN
+from crf import CRF
 
-class LSTM(nn.Module):
 
-    def __init__(self, vocdim, embdim, window, hiddim, outdim,
-                 lossfn, embed):
-        super(LSTM, self).__init__()
+class Network(nn.Module):
 
-        # 词汇维度
-        self.vocdim = vocdim
-        # 词向量维度
-        self.embdim = embdim
-        # 上下文窗口大小
-        self.window = window
-        # 隐藏层维度
-        self.hiddim = hiddim
-        # 输出层维度
-        self.outdim = outdim
-        self.embed = nn.Embedding.from_pretrained(embed, False)
-        self.lstm = nn.LSTM(embdim * window, self.hiddim, batch_first=True)
+    def __init__(self,
+                 use_lstm=False,
+                 use_crf=False,
+                 *args, **kwargs):
+        super(Network, self).__init__()
+
+        self.use_lstm = use_lstm
+        self.use_crf = use_crf
+
+        # LSTM层
+        if use_lstm:
+            self.lstm = LSTM(*args, **kwargs)
+        # 前馈网络层
+        else:
+            self.bpnn = BPNN(*args, **kwargs)
+        # 输出层
         self.out = nn.Linear(hiddim, outdim)
+        # CRF层
+        if use_crf:
+            self.crf = CRF(outdim)
+
         self.dropout = nn.Dropout()
         self.lossfn = lossfn
 
-    def forward(self, x, lens):
-        B, T, N = x.shape
-        x = self.embed(x)
-        x = x.view(B, T, -1)
-        hidden = self.init_hidden(x.size(0))
-        x = pack_padded_sequence(x, lens, batch_first=True)
-        x, hidden = self.lstm(x, hidden)
-        x = self.dropout(x[0])
+    def forward(self, wx, cx, wlens, clens):
+        x = self.lstm(wx, cx, wlens, clens)
+        x = self.dropout(x)
         return self.out(x)
-
-    def init_hidden(self, batch_size):
-        return (nn.init.orthogonal_(torch.zeros(1, batch_size, self.hiddim)),
-                nn.init.orthogonal_(torch.zeros(1, batch_size, self.hiddim)))
 
     def fit(self, train_data, dev_data, file,
             epochs, batch_size, interval,
@@ -66,13 +65,19 @@ class LSTM(nn.Module):
         for epoch in range(epochs):
             start = datetime.now()
 
-            for x, y, lens in train_loader:
+            for wx, cx, wlens, clens, y in train_loader:
                 optimizer.zero_grad()
-                sorted_lens, indices = lens.sort(descending=True)
-                sorted_x, sorted_y = x[indices], y[indices]
-                output = self(sorted_x, sorted_lens)
-                y = pack_padded_sequence(sorted_y, sorted_lens, True)[0]
-                loss = self.lossfn(output, y)
+                # 获取长度由大到小排列的词序列索引
+                wlens, indices = wlens.sort(descending=True)
+                maxlen = wlens[0]
+                # 调整序列顺序并去除无用数据
+                cx, clens = cx[indices, :maxlen], clens[indices, :maxlen]
+                wx, y = wx[indices, :maxlen], y[indices, :maxlen]
+
+                output = self(wx, cx, wlens, clens)
+                loss = sum(self.crf(emit[:wl], tiseq[:wl])
+                           for emit, tiseq, wl in zip(output, y, wlens))
+                loss /= len(y)
                 loss.backward()
                 optimizer.step()
 
@@ -98,17 +103,31 @@ class LSTM(nn.Module):
         print(f"max accuracy of dev is {max_accuracy:.2%} at epoch {max_e}")
         print(f"mean time of each epoch is {total_time / (epoch + 1)}s\n")
 
-    def evaluate(self, data):
+    def evaluate(self, data, batch_size=25):
         # 设置为评价模式
         self.eval()
 
         loss, tp, total = 0, 0, 0
-        x, y, lens = data
-        output = self(x, lens)
-        y = pack_padded_sequence(y, lens, True)[0]
-        loss = self.lossfn(output, y)
-        tp = (torch.argmax(output, dim=1) == y).sum().item()
-        total = lens.sum().item()
+        dataset = TensorDataset(*data)
+        train_loader = DataLoader(dataset=dataset,
+                                  batch_size=batch_size)
+        with torch.no_grad():
+            for wx, cx, wlens, clens, y in train_loader:
+                maxlen = wlens[0]
+                # 去除无用数据
+                cx, clens = cx[:, :maxlen], clens[:, :maxlen]
+                wx, y = wx[:, :maxlen], y[:, :maxlen]
+
+                output = self(wx, cx, wlens, clens)
+
+                for emit, tiseq, wl in zip(output, y, wlens):
+                    emit = emit[:wl]
+                    tiseq = tiseq[:wl]
+
+                    loss += self.crf(emit, tiseq)
+                    tp += torch.sum(tiseq == self.crf.viterbi(emit)).item()
+                total += wlens.sum().item()
+        loss /= total
         return loss, tp, total, tp / total
 
     def dump(self, file):

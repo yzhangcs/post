@@ -1,0 +1,28 @@
+nohup: 忽略输入
+Set max num of threads to 4
+Preprocess the data
+	sentences: 46572
+	different words: 59294
+	different tags: 35
+	size of train_data: 46572
+	size of dev_data: 2079
+Create Neural Network
+	vocdim: 59297
+	window: 5
+	embdim: 50
+	hiddim: 300
+	outdim: 35
+BPNN(
+  (embed): Embedding(59297, 50)
+  (hid): Linear(in_features=250, out_features=300, bias=True)
+  (out): Linear(in_features=300, out_features=35, bias=True)
+  (crf): CRF()
+  (dropout): Dropout(p=0.5)
+)
+Use Adam optimizer to train the network
+	epochs: 100
+	batch_size: 25
+	interval: 10
+	eta: 0.001
+	lmbda: 0
+
