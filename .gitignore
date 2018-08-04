@@ -4,8 +4,9 @@ data
 # ignore pycache
 __pycache__
 
-# ignore pickle files
+# ignore saved model
 *.pkl
+*.pt
 
 # ignore vscode
 .vscode
