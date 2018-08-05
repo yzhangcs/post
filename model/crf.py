@@ -24,8 +24,8 @@ class CRF(nn.Module):
         alpha = self.strans + emit[0]
         for i in range(1, T):
             scores = torch.t(self.trans + emit[i])
-            alpha = logsumexp(scores + alpha, dim=1)
-        logZ = logsumexp(alpha + self.etrans, dim=0)
+            alpha = torch.logsumexp(scores + alpha, dim=1)
+        logZ = torch.logsumexp(alpha + self.etrans, dim=0)
         return logZ - self.score(emit, y)
 
     def score(self, emit, y):
@@ -56,10 +56,3 @@ class CRF(nn.Module):
             predict.append(prev)
         predict.reverse()
         return torch.tensor(predict)
-
-
-def logsumexp(tensor, dim):
-    offset = torch.max(tensor, dim)[0]
-    broadcast = offset.unsqueeze(dim)
-    tmp = torch.log(torch.sum(torch.exp(tensor - broadcast), dim))
-    return offset + tmp
