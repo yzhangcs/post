@@ -55,6 +55,7 @@ if __name__ == '__main__':
     file = args.file if args.file else config.netpkl
 
     start = datetime.now()
+
     print("Create Neural Network")
     if args.lstm and not args.char:
         from model.lstm import LSTM
@@ -122,7 +123,11 @@ if __name__ == '__main__':
 
     # 载入训练好的模型
     network = torch.load(file)
-    loss, tp, total, accuracy = network.evaluate(test_data)
+    testset = TensorDataset(*test_data)
+    test_eval_loader = DataLoader(dataset=testset,
+                                  batch_size=len(testset),
+                                  collate_fn=network.collate_fn)
+    loss, tp, total, accuracy = network.evaluate(test_eval_loader)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
           f"Accuracy: {tp} / {total} = {accuracy:.2%}")

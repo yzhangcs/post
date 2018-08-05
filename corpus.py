@@ -74,7 +74,7 @@ class Corpus(object):
         return extended_embed
 
     def load(self, fdata, charwise=False, window=0):
-        x, cx, lens, clens, y = [], [], [], [], []
+        x, lens, cx, clens, y = [], [], [], [], []
         # 句子按照长度从大到小有序
         sentences = sorted(self.preprocess(fdata),
                            key=lambda x: len(x[0]),
@@ -89,24 +89,24 @@ class Corpus(object):
                 x.append(self.get_context(wiseq, window))
             else:
                 x.append(torch.tensor([wi for wi in wiseq], dtype=torch.long))
+            lens.append(len(tiseq))
             # 不足最大长度的部分用0填充
             cx.append(torch.tensor([
                 [self.cdict.get(c, self.uci)
                     for c in w] + [0] * (maxlen - len(w))
                 for w in wordseq
             ]))
-            lens.append(len(tiseq))
             clens.append(torch.tensor([len(w) for w in wordseq],
                                       dtype=torch.long))
             y.append(torch.tensor([ti for ti in tiseq], dtype=torch.long))
 
         x = pad_sequence(x, True)
-        cx = pad_sequence(cx, True)
         lens = torch.tensor(lens)
+        cx = pad_sequence(cx, True)
         clens = pad_sequence(clens, True)
         y = pad_sequence(y, True, padding_value=-1)
 
-        data = (x, cx, lens, clens, y) if charwise else (x, lens, y)
+        data = (x, lens, cx, clens, y) if charwise else (x, lens, y)
         return data
 
     def get_context(self, wiseq, window):

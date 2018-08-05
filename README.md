@@ -4,7 +4,7 @@
 
 ```txt
 python == 3.6.5
-pytorch ==0.4.1
+pytorch == 0.4.1
 ```
 
 ## Structures
