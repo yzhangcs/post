@@ -10,12 +10,13 @@ from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
                                 pad_sequence)
 from torch.utils.data import DataLoader, TensorDataset
 
-from crf import CRF
+from .crf import CRF
 
 
 class LSTM(nn.Module):
 
-    def __init__(self, vocdim, chrdim, embdim, cembdim, hiddim, outdim,
+    def __init__(self, vocdim, chrdim,
+                 embdim, cembdim, window, hiddim, outdim,
                  lossfn, use_crf=False, bidirectional=False,
                  pretrained=None):
         super(LSTM, self).__init__()
@@ -29,11 +30,13 @@ class LSTM(nn.Module):
                               bidirectional=bidirectional)
         # 词嵌入LSTM层
         if bidirectional:
-            self.wlstm = nn.LSTM(embdim + cembdim, hiddim // 2,
+            self.wlstm = nn.LSTM(input_size=embdim * window + cembdim,
+                                 hidden_size=hiddim // 2,
                                  batch_first=True,
                                  bidirectional=True)
         else:
-            self.wlstm = nn.LSTM(embdim + cembdim, hiddim,
+            self.wlstm = nn.LSTM(input_size=embdim * window + cembdim,
+                                 hidden_size=hiddim,
                                  batch_first=True,
                                  bidirectional=False)
 
@@ -46,10 +49,12 @@ class LSTM(nn.Module):
         self.lossfn = lossfn
 
     def forward(self, x, lens, cx, clens):
-        B, T = x.shape
+        B, T, N = x.shape
         # 获取词嵌入向量
         x = self.embed(x)
+        # 拼接上下文
         x = x.view(B, T, -1)
+
         # 获取字嵌入向量
         cx = torch.cat([cx[i, :l] for i, l in enumerate(lens)])
         clens = torch.cat([clens[i, :l] for i, l in enumerate(lens)])
@@ -98,16 +103,17 @@ class LSTM(nn.Module):
             for x, lens, cx, clens, y in train_loader:
                 # 清除梯度
                 optimizer.zero_grad()
+                # 获取掩码
+                y = y.t()
+                mask = y.ge(0)  # [T, B]
 
                 output = self(x, lens, cx, clens)
                 if self.crf is None:
-                    output = pack_padded_sequence(output, lens, True).data
-                    y = pack_padded_sequence(y, lens, True).data
+                    output = pack_padded_sequence(output, lens).data
+                    y = pack_padded_sequence(y, lens).data
                     loss = self.lossfn(output, y)
                 else:
-                    # TODO
-                    loss = sum(self.crf(output[i, :l], y[i, :l])
-                               for i, l in enumerate(lens))
+                    loss = self.crf(output, y, mask)
                 loss.backward()
                 optimizer.step()
 
@@ -140,21 +146,21 @@ class LSTM(nn.Module):
 
         loss, tp, total = 0, 0, 0
         for x, lens, cx, clens, y in loader:
+            # 获取掩码
+            y = y.t()
+            mask = y.ge(0)  # [T, B]
+
             output = self.forward(x, lens, cx, clens)
             if self.crf is None:
-                output = pack_padded_sequence(output, lens, True).data
-                y = pack_padded_sequence(y, lens, True).data
+                output = pack_padded_sequence(output, lens).data
+                y = pack_padded_sequence(y, lens).data
 
                 predict = torch.argmax(output, dim=1)
                 loss += self.lossfn(output, y, reduction='sum').item()
-                tp += torch.sum(predict == y).item()
             else:
-                # TODO
-                for i, length in enumerate(lens):
-                    emit, tiseq = output[i, :length], y[i, :length]
-                    predict = self.crf.viterbi(emit)
-                    loss += self.crf(emit, tiseq).item()
-                    tp += torch.sum(predict == tiseq).item()
+                predict = self.crf.viterbi(output, mask)
+                loss += self.crf(output, y, mask)
+            tp += torch.sum(predict == y).item()
             total += lens.sum().item()
         loss /= total
         return loss, tp, total, tp / total
@@ -165,7 +171,7 @@ class LSTM(nn.Module):
         x, lens, cx, clens, y = zip(*data)
         # 获取句子的最大长度
         maxlen = lens[0]
-        # 去除无用数据
+        # 去除无用的填充数据
         x = torch.stack(x)[:, :maxlen]
         lens = torch.tensor(lens)
         cx = torch.stack(cx)[:, :maxlen]

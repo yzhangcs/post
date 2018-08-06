@@ -73,7 +73,7 @@ class Corpus(object):
         extended_embed[indices] = embed
         return extended_embed
 
-    def load(self, fdata, charwise=False, window=0):
+    def load(self, fdata, charwise=False, window=1):
         x, lens, cx, clens, y = [], [], [], [], []
         # 句子按照长度从大到小有序
         sentences = sorted(self.preprocess(fdata),
@@ -85,10 +85,7 @@ class Corpus(object):
         for wordseq, tagseq in sentences:
             wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
             tiseq = [self.tdict.get(t, -1) for t in tagseq]  # TODO
-            if window > 0:
-                x.append(self.get_context(wiseq, window))
-            else:
-                x.append(torch.tensor([wi for wi in wiseq], dtype=torch.long))
+            x.append(self.get_context(wiseq, window))
             lens.append(len(tiseq))
             # 不足最大长度的部分用0填充
             cx.append(torch.tensor([
@@ -109,7 +106,7 @@ class Corpus(object):
         data = (x, lens, cx, clens, y) if charwise else (x, lens, y)
         return data
 
-    def get_context(self, wiseq, window):
+    def get_context(self, wiseq, window=1):
         half = window // 2
         length = len(wiseq)
         wiseq = [self.swi] * half + wiseq + [self.ewi] * half

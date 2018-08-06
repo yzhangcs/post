@@ -9,12 +9,12 @@ import torch.optim as optim
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch.utils.data import DataLoader, TensorDataset
 
-from crf import CRF
+from .crf import CRF
 
 
 class LSTM(nn.Module):
 
-    def __init__(self, vocdim, embdim, hiddim, outdim,
+    def __init__(self, vocdim, embdim, window, hiddim, outdim,
                  lossfn, use_crf=False, bidirectional=False,
                  pretrained=None):
         super(LSTM, self).__init__()
@@ -26,11 +26,13 @@ class LSTM(nn.Module):
 
         # 词嵌入LSTM层
         if bidirectional:
-            self.lstm = nn.LSTM(embdim, hiddim // 2,
+            self.lstm = nn.LSTM(input_size=embdim * window,
+                                hidden_size=hiddim // 2,
                                 batch_first=True,
                                 bidirectional=True)
         else:
-            self.lstm = nn.LSTM(embdim, hiddim,
+            self.lstm = nn.LSTM(input_size=embdim * window,
+                                hidden_size=hiddim,
                                 batch_first=True,
                                 bidirectional=False)
 
@@ -43,15 +45,16 @@ class LSTM(nn.Module):
         self.lossfn = lossfn
 
     def forward(self, x, lens):
-        B, T = x.shape
+        B, T, N = x.shape
         # 获取词嵌入向量
         x = self.embed(x)
+        # 拼接上下文
         x = x.view(B, T, -1)
 
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
         x, hidden = self.lstm(x)
-        x = pad_packed_sequence(x, True)[0]
+        x = pad_packed_sequence(x)[0]
         x = self.dropout(x)
         return self.out(x)
 
@@ -89,15 +92,17 @@ class LSTM(nn.Module):
                 # 清除梯度
                 optimizer.zero_grad()
 
+                # 获取掩码
+                y = y.t()
+                mask = y.ge(0)  # [T, B]
+
                 output = self(x, lens)
                 if self.crf is None:
-                    output = pack_padded_sequence(output, lens, True).data
-                    y = pack_padded_sequence(y, lens, True).data
+                    output = pack_padded_sequence(output, lens).data
+                    y = pack_padded_sequence(y, lens).data
                     loss = self.lossfn(output, y)
                 else:
-                    # TODO
-                    loss = sum(self.crf(output[i, :l], y[i, :l])
-                               for i, l in enumerate(lens))
+                    loss = self.crf(output, y, mask)
                 loss.backward()
                 optimizer.step()
 
@@ -130,22 +135,21 @@ class LSTM(nn.Module):
 
         loss, tp, total = 0, 0, 0
         for x, lens, y in loader:
-            output = self.forward(x, lens)
+            # 获取掩码
+            y = y.t()
+            mask = y.ge(0)  # [T, B]
 
+            output = self.forward(x, lens)
             if self.crf is None:
-                output = pack_padded_sequence(output, lens, True).data
-                y = pack_padded_sequence(y, lens, True).data
+                output = pack_padded_sequence(output, lens).data
+                y = pack_padded_sequence(y, lens).data
 
                 predict = torch.argmax(output, dim=1)
                 loss += self.lossfn(output, y, reduction='sum')
-                tp += torch.sum(predict == y).item()
             else:
-                # TODO
-                for i, length in enumerate(lens):
-                    emit, tiseq = output[i, :length], y[i, :length]
-                    predict = self.crf.viterbi(emit)
-                    loss += self.crf(emit, tiseq)
-                    tp += torch.sum(predict == tiseq).item()
+                predict = self.crf.viterbi(output, mask)
+                loss += self.crf(output, y, mask)
+            tp += torch.sum(predict == y).item()
             total += lens.sum().item()
         loss /= total
         return loss, tp, total, tp / total
@@ -156,7 +160,7 @@ class LSTM(nn.Module):
         x, lens, y = zip(*data)
         # 获取句子的最大长度
         maxlen = lens[0]
-        # 去除无用数据
+        # 去除无用的填充数据
         x = torch.stack(x)[:, :maxlen]
         lens = torch.tensor(lens)
         y = torch.stack(y)[:, :maxlen]

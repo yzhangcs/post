@@ -7,8 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
+from torch.nn.utils.rnn import pad_sequence
 
-from crf import CRF
+from .crf import CRF
 
 
 class BPNN(nn.Module):
@@ -17,35 +18,27 @@ class BPNN(nn.Module):
                  lossfn, use_crf=False, pretrained=None):
         super(BPNN, self).__init__()
 
-        # 词汇维度
-        self.vocdim = vocdim
-        # 词向量维度
-        self.embdim = embdim
-        # 上下文窗口大小
-        self.window = window
-        # 隐藏层维度
-        self.hiddim = hiddim
-        # 输出层维度
-        self.outdim = outdim
-        # 损失函数
-        self.lossfn = lossfn
-
         if pretrained is None:
             self.embed = torch.randn(vocdim, embdim)
         else:
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
         # 隐藏层
-        self.hid = nn.Linear(window * embdim, hiddim)
+        self.hid = nn.Linear(embdim * window, hiddim)
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
         self.dropout = nn.Dropout()
+        self.lossfn = lossfn
 
     def forward(self, x):
+        L, N = x.shape
+        # 获取词嵌入向量
         x = self.embed(x)
-        x = x.view(-1, self.window * self.embdim)
+        # 拼接上下文
+        x = x.view(L, -1)
+
         x = self.dropout(F.relu(self.hid(x)))
         return self.out(x)
 
@@ -83,18 +76,20 @@ class BPNN(nn.Module):
                 # 清除梯度
                 optimizer.zero_grad()
 
+                # 获取掩码
+                mask = y.ge(0).t()  # [T, B]
                 # 打包数据
+                lens = lens.tolist()
                 x = torch.cat([x[i, :l] for i, l in enumerate(lens)])
                 y = torch.cat([y[i, :l] for i, l in enumerate(lens)])
+
                 output = self(x)
                 if self.crf is None:
                     loss = self.lossfn(output, y)
                 else:
-                    output = torch.split(output, lens.tolist())
-                    y = torch.split(y, lens.tolist())
-                    # TODO
-                    loss = sum(self.crf(emit, tiseq)
-                               for emit, tiseq in zip(output, y))
+                    emit = pad_sequence(torch.split(output, lens))  # [T, B, N]
+                    target = pad_sequence(torch.split(y, lens))  # [T, B]
+                    loss = self.crf(emit, target, mask)
                 loss.backward()
                 optimizer.step()
 
@@ -127,30 +122,33 @@ class BPNN(nn.Module):
 
         loss, tp, total = 0, 0, 0
         for x, lens, y in loader:
+            # 获取掩码
+            mask = y.ge(0).t()  # [T, B]
             # 打包数据
+            lens = lens.tolist()
             x = torch.cat([x[i, :l] for i, l in enumerate(lens)])
             y = torch.cat([y[i, :l] for i, l in enumerate(lens)])
 
             output = self.forward(x)
             if self.crf is None:
                 predict = torch.argmax(output, dim=1)
-                loss += self.lossfn(output, y, reduction='sum').item()
-                tp += torch.sum(y == predict).item()
+                loss += self.lossfn(output, y, reduction='sum')
             else:
-                output = torch.split(output, lens.tolist())
-                y = torch.split(y, lens.tolist())
-                for emit, tiseq in zip(output, y):
-                    predict = self.crf.viterbi(emit)
-                    loss += self.crf(emit, tiseq).item()
-                    tp += torch.sum(tiseq == predict).item()
-            total += lens.sum().item()
+                emit = pad_sequence(torch.split(output, lens))  # [T, B, N]
+                target = pad_sequence(torch.split(y, lens))  # [T, B]
+                predict = self.crf.viterbi(emit, mask)
+                loss += self.crf(emit, target, mask)
+            tp += torch.sum(y == predict).item()
+            total += sum(lens)
         loss /= total
         return loss, tp, total, tp / total
 
     def collate_fn(self, data):
+        # 按照长度调整顺序
+        data.sort(key=lambda x: x[1], reverse=True)
         x, lens, y = zip(*data)
         # 获取句子的最大长度
-        maxlen = max(lens)
+        maxlen = lens[0]
         # 去除无用的填充数据
         x = torch.stack(x)[:, :maxlen]
         lens = torch.tensor(lens)
