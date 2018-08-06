@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, TensorDataset
 
 from config import Config
 from corpus import Corpus
@@ -29,6 +28,8 @@ if __name__ == '__main__':
                         default='4', type=int, help='set max num of threads')
     args = parser.parse_args()
 
+    # 设置随机数种子
+    torch.manual_seed(1)
     # 设置最大线程数
     torch.set_num_threads(args.threads)
     print(f"Set max num of threads to {args.threads}")
@@ -127,11 +128,7 @@ if __name__ == '__main__':
 
     # 载入训练好的模型
     network = torch.load(file)
-    testset = TensorDataset(*test_data)
-    test_eval_loader = DataLoader(dataset=testset,
-                                  batch_size=len(testset),
-                                  collate_fn=network.collate_fn)
-    loss, tp, total, accuracy = network.evaluate(test_eval_loader)
+    loss, tp, total, accuracy = network.evaluate(test_data, config.batch_size)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
           f"Accuracy: {tp} / {total} = {accuracy:.2%}")

@@ -68,14 +68,13 @@ class CRF(nn.Module):
             delta[i], paths[i] = torch.max(scores, dim=1)
 
         predicts = []
-        for i in range(B):
-            length = lens[i]
+        for i, length in enumerate(lens):
             prev = torch.argmax(delta[length - 1, i] + self.etrans)
 
             predict = [prev]
             for j in reversed(range(1, length)):
                 prev = paths[j, i, prev]
                 predict.append(prev)
-            predict.reverse()
-            predicts.append(torch.tensor(predict))
+            # 反转预测序列并保存
+            predicts.append(torch.tensor(predict).flip(0))
         return torch.cat(predicts)

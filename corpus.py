@@ -80,8 +80,8 @@ class Corpus(object):
                            key=lambda x: len(x[0]),
                            reverse=True)
         # 获取单词最大长度
-        maxlen = max(max(len(w) for w in wordseq)
-                     for wordseq, tagseq in sentences)
+        max_len = max(max(len(w) for w in wordseq)
+                      for wordseq, tagseq in sentences)
         for wordseq, tagseq in sentences:
             wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
             tiseq = [self.tdict.get(t, -1) for t in tagseq]  # TODO
@@ -90,7 +90,7 @@ class Corpus(object):
             # 不足最大长度的部分用0填充
             cx.append(torch.tensor([
                 [self.cdict.get(c, self.uci)
-                    for c in w] + [0] * (maxlen - len(w))
+                    for c in w] + [0] * (max_len - len(w))
                 for w in wordseq
             ]))
             clens.append(torch.tensor([len(w) for w in wordseq],
