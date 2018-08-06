@@ -1,4 +1,6 @@
-# POST
+# post
+
+Several models for POS Tagging
 
 ## Requirements
 

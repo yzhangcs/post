@@ -18,41 +18,64 @@ class CRF(nn.Module):
         # 句尾迁移
         self.etrans = nn.Parameter(torch.randn(self.nt))
 
-    def forward(self, emit, y):
-        T = len(emit)
+    def forward(self, emit, target, mask):
+        logZ = self.get_logZ(emit, mask)
+        score = self.score(emit, target, mask)
+        return logZ - score
 
-        alpha = self.strans + emit[0]
+    def get_logZ(self, emit, mask):
+        T, B, N = emit.shape
+
+        alpha = self.strans + emit[0]  # [B, N]
         for i in range(1, T):
-            scores = torch.t(self.trans + emit[i])
-            alpha = torch.logsumexp(scores + alpha, dim=1)
-        logZ = torch.logsumexp(alpha + self.etrans, dim=0)
-        return logZ - self.score(emit, y)
+            trans_i = self.trans.unsqueeze(0)  # [1, N, N]
+            emit_i = emit[i].unsqueeze(1)  # [B, 1, N]
+            scores = trans_i + emit_i + alpha.unsqueeze(2)  # [B, N, N]
+            scores = torch.logsumexp(scores, dim=1)  # [B, N]
+            alpha.masked_scatter_(mask[i].unsqueeze(1), scores)
+        return torch.logsumexp(alpha + self.etrans, dim=1).sum()
 
-    def score(self, emit, y):
-        T = len(emit)
-        score = 0
+    def score(self, emit, target, mask):
+        T, B, N = emit.shape
+        scores = torch.zeros(T, B)
 
-        score += self.strans[y[0]]
-        score += self.trans[y[:-1], y[1:]].sum()
-        score += self.etrans[y[-1]]
-        score += emit.gather(dim=1, index=y.view(-1, 1)).sum()
+        # 加上句间迁移分数
+        scores[1:] += self.trans[target[:-1], target[1:]]
+        # 加上发射分数
+        scores += emit.gather(dim=2, index=target.unsqueeze(2)).squeeze(2)
+        # 通过掩码过滤分数
+        score = scores.masked_select(mask).sum()
+
+        # 获取序列最后的词性的索引
+        ends = mask.sum(dim=0).view(1, -1) - 1
+        # 加上句首迁移分数
+        score += self.strans[target[0]].sum()
+        # 加上句尾迁移分数
+        score += self.etrans[target.gather(dim=0, index=ends)].sum()
         return score
 
-    def viterbi(self, emit):
-        T = len(emit)
-        delta = torch.zeros(T, self.nt)
-        paths = torch.zeros(T, self.nt, dtype=torch.long)
+    def viterbi(self, emit, mask):
+        T, B, N = emit.shape
+        lens = mask.sum(dim=0)
+        delta = torch.zeros(T, B, N)
+        paths = torch.zeros(T, B, N, dtype=torch.long)
 
         delta[0] = self.strans + emit[0]
-
         for i in range(1, T):
-            scores = torch.t(self.trans + emit[i]) + delta[i - 1]
+            trans_i = self.trans.unsqueeze(0)  # [1, N, N]
+            emit_i = emit[i].unsqueeze(1)  # [B, 1, N]
+            scores = trans_i + emit_i + delta[i - 1].unsqueeze(2)  # [B, N, N]
             delta[i], paths[i] = torch.max(scores, dim=1)
-        prev = torch.argmax(delta[-1] + self.etrans)
 
-        predict = [prev]
-        for i in reversed(range(1, T)):
-            prev = paths[i, prev]
-            predict.append(prev)
-        predict.reverse()
-        return torch.tensor(predict)
+        predicts = []
+        for i in range(B):
+            length = lens[i]
+            prev = torch.argmax(delta[length - 1, i] + self.etrans)
+
+            predict = [prev]
+            for j in reversed(range(1, length)):
+                prev = paths[j, i, prev]
+                predict.append(prev)
+            predict.reverse()
+            predicts.append(torch.tensor(predict))
+        return torch.cat(predicts)
