@@ -75,11 +75,11 @@ class BPNN(nn.Module):
                 x = torch.cat([x[i, :l] for i, l in enumerate(lens)])
                 y = torch.cat([y[i, :l] for i, l in enumerate(lens)])
 
-                output = self(x)
+                out = self(x)
                 if self.crf is None:
-                    loss = self.lossfn(output, y)
+                    loss = self.lossfn(out, y)
                 else:
-                    emit = pad_sequence(torch.split(output, lens))  # [T, B, N]
+                    emit = pad_sequence(torch.split(out, lens))  # [T, B, N]
                     target = pad_sequence(torch.split(y, lens))  # [T, B]
                     loss = self.crf(emit, target, mask)
                 loss.backward()
@@ -123,12 +123,12 @@ class BPNN(nn.Module):
             x = torch.cat([x[i, :l] for i, l in enumerate(lens)])
             y = torch.cat([y[i, :l] for i, l in enumerate(lens)])
 
-            output = self.forward(x)
+            out = self.forward(x)
             if self.crf is None:
-                predict = torch.argmax(output, dim=1)
-                loss += self.lossfn(output, y, reduction='sum')
+                predict = torch.argmax(out, dim=1)
+                loss += self.lossfn(out, y, reduction='sum')
             else:
-                emit = pad_sequence(torch.split(output, lens))  # [T, B, N]
+                emit = pad_sequence(torch.split(out, lens))  # [T, B, N]
                 target = pad_sequence(torch.split(y, lens))  # [T, B]
                 predict = self.crf.viterbi(emit, mask)
                 loss += self.crf(emit, target, mask)

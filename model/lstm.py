@@ -6,7 +6,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
+                                pad_sequence)
 from torch.utils.data import DataLoader, TensorDataset
 
 from .crf import CRF
@@ -86,15 +87,15 @@ class LSTM(nn.Module):
                 optimizer.zero_grad()
                 # 获取掩码
                 mask = y.ge(0).t()  # [T, B]
-                y = pack_padded_sequence(y, lens, True).data
+                y = torch.cat([y[i, :l] for i, l in enumerate(lens)])
 
-                output = self(x, lens)  # [T, B, N]
+                out = self(x, lens)  # [T, B, N]
                 if self.crf is None:
-                    output = pack_padded_sequence(output, lens).data
-                    loss = self.lossfn(output, y)
+                    out = torch.cat([out[:l, i] for i, l in enumerate(lens)])
+                    loss = self.lossfn(out, y)
                 else:
-                    target, _ = pad_packed_sequence(y)
-                    loss = self.crf(output, target, mask)
+                    target = pad_sequence(torch.split(y, lens.tolist()))
+                    loss = self.crf(out, target, mask)
                 loss.backward()
                 optimizer.step()
 
@@ -131,17 +132,17 @@ class LSTM(nn.Module):
         for x, lens, y in loader:
             # 获取掩码
             mask = y.ge(0).t()  # [T, B]
-            y = pack_padded_sequence(y, lens, True).data
+            y = torch.cat([y[i, :l] for i, l in enumerate(lens)])
 
-            output = self.forward(x, lens)
+            out = self.forward(x, lens)  # [T, B, N]
             if self.crf is None:
-                output = pack_padded_sequence(output, lens).data
-                predict = torch.argmax(output, dim=1)
-                loss += self.lossfn(output, y, reduction='sum')
+                out = torch.cat([out[:l, i] for i, l in enumerate(lens)])
+                predict = torch.argmax(out, dim=1)
+                loss += self.lossfn(out, y, reduction='sum')
             else:
-                predict = self.crf.viterbi(output, mask)
-                target, _ = pad_packed_sequence(y)
-                loss += self.crf(output, target, mask)
+                target = pad_sequence(torch.split(y, lens.tolist()))
+                predict = self.crf.viterbi(out, mask)
+                loss += self.crf(out, target, mask)
             tp += torch.sum(predict == y).item()
             total += lens.sum().item()
         loss /= total
