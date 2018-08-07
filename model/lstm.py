@@ -138,14 +138,14 @@ class LSTM(nn.Module):
             if self.crf is None:
                 out = torch.cat([out[:l, i] for i, l in enumerate(lens)])
                 predict = torch.argmax(out, dim=1)
-                loss += self.lossfn(out, y, reduction='sum')
+                loss += self.lossfn(out, y)
             else:
                 target = pad_sequence(torch.split(y, lens.tolist()))
                 predict = self.crf.viterbi(out, mask)
                 loss += self.crf(out, target, mask)
             tp += torch.sum(predict == y).item()
             total += lens.sum().item()
-        loss /= total
+        loss /= len(loader)
         return loss, tp, total, tp / total
 
     def collate_fn(self, data):

@@ -30,7 +30,7 @@ class LSTM(nn.Module):
                               bidirectional=bidirectional)
         # 词嵌入LSTM层
         if bidirectional:
-            self.wlstm = nn.LSTM(input_size=embdim * window + cembdim,
+            self.wlstm = nn.LSTM(input_size=embdim * window + cembdim * 2,
                                  hidden_size=hiddim // 2,
                                  batch_first=True,
                                  bidirectional=True)
@@ -150,14 +150,14 @@ class LSTM(nn.Module):
             if self.crf is None:
                 out = torch.cat([out[:l, i] for i, l in enumerate(lens)])
                 predict = torch.argmax(out, dim=1)
-                loss += self.lossfn(out, y, reduction='sum')
+                loss += self.lossfn(out, y)
             else:
                 target = pad_sequence(torch.split(y, lens.tolist()))
                 predict = self.crf.viterbi(out, mask)
                 loss += self.crf(out, target, mask)
             tp += torch.sum(predict == y).item()
             total += lens.sum().item()
-        loss /= total
+        loss /= len(loader)
         return loss, tp, total, tp / total
 
     def collate_fn(self, data):
@@ -183,14 +183,9 @@ class CharLSTM(nn.Module):
         # 字嵌入
         self.embed = nn.Embedding(chrdim, embdim)
         # 字嵌入LSTM层
-        if bidirectional:
-            self.lstm = nn.LSTM(embdim, hiddim // 2,
-                                batch_first=True,
-                                bidirectional=True)
-        else:
-            self.lstm = nn.LSTM(embdim, hiddim,
-                                batch_first=True,
-                                bidirectional=False)
+        self.lstm = nn.LSTM(embdim, hiddim,
+                            batch_first=True,
+                            bidirectional=bidirectional)
 
     def forward(self, x, lens):
         B, T = x.shape

@@ -58,16 +58,18 @@ class Corpus(object):
         # 扩展词汇和字符
         self.words = sorted(set(self.words + unk_words))
         self.chars = sorted(set(self.chars + unk_chars))
+        # 更新字典和索引
         self.wdict = {w: i for i, w in enumerate(self.words)}
         self.cdict = {c: i for i, c in enumerate(self.chars)}
         self.swi = self.wdict[self.SOS]
         self.ewi = self.wdict[self.EOS]
         self.uwi = self.wdict[self.UNK]
         self.uci = self.cdict[self.UNK]
+        # 更新词汇和字符数
         self.nw = len(self.words)
         self.nc = len(self.chars)
-        # 不在预训练矩阵中的词汇的词向量值随机初始化
-        embed = torch.FloatTensor(embed)
+        # 不在预训练矩阵中的词汇对应的词向量值随机初始化
+        embed = torch.tensor(embed, dtype=torch.float)
         indices = [self.wdict[w] for w in words]
         extended_embed = torch.randn(self.nw, embed.size(1))
         extended_embed[indices] = embed
@@ -84,14 +86,14 @@ class Corpus(object):
                       for wordseq, tagseq in sentences)
         for wordseq, tagseq in sentences:
             wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
-            tiseq = [self.tdict.get(t, -1) for t in tagseq]  # TODO
+            tiseq = [self.tdict[t] for t in tagseq]
             # 获取每个词汇的上下文
             x.append(self.get_context(wiseq, window))
             lens.append(len(tiseq))
             # 不足最大长度的部分用0填充
             cx.append(torch.tensor([
                 [self.cdict.get(c, self.uci)
-                    for c in w] + [0] * (max_len - len(w))
+                 for c in w] + [0] * (max_len - len(w))
                 for w in wordseq
             ]))
             clens.append(torch.tensor([len(w) for w in wordseq],

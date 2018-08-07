@@ -11,7 +11,7 @@ class CRF(nn.Module):
 
         # 不同的词性个数
         self.nt = nt
-        # 句间迁移
+        # 句间迁移(FROM->TO)
         self.trans = nn.Parameter(torch.randn(self.nt, self.nt))
         # 句首迁移
         self.strans = nn.Parameter(torch.randn(self.nt))
@@ -19,9 +19,11 @@ class CRF(nn.Module):
         self.etrans = nn.Parameter(torch.randn(self.nt))
 
     def forward(self, emit, target, mask):
+        T, B, N = emit.shape
+
         logZ = self.get_logZ(emit, mask)
         score = self.score(emit, target, mask)
-        return logZ - score
+        return (logZ - score) / B
 
     def get_logZ(self, emit, mask):
         T, B, N = emit.shape

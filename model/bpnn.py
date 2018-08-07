@@ -126,7 +126,7 @@ class BPNN(nn.Module):
             out = self.forward(x)
             if self.crf is None:
                 predict = torch.argmax(out, dim=1)
-                loss += self.lossfn(out, y, reduction='sum')
+                loss += self.lossfn(out, y)
             else:
                 emit = pad_sequence(torch.split(out, lens))  # [T, B, N]
                 target = pad_sequence(torch.split(y, lens))  # [T, B]
@@ -134,7 +134,7 @@ class BPNN(nn.Module):
                 loss += self.crf(emit, target, mask)
             tp += torch.sum(y == predict).item()
             total += sum(lens)
-        loss /= total
+        loss /= len(loader)
         return loss, tp, total, tp / total
 
     def collate_fn(self, data):
