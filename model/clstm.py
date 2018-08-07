@@ -63,6 +63,7 @@ class LSTM(nn.Module):
 
         # 拼接词表示和字表示
         x = torch.cat((x, cx), dim=-1)
+        x = self.dropout(x)
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
         x, hidden = self.wlstm(x)

@@ -56,8 +56,8 @@ class Corpus(object):
         unk_words = [w for w in words if w not in self.wdict]
         unk_chars = [c for c in ''.join(unk_words) if c not in self.cdict]
         # 扩展词汇和字符
-        self.words = sorted(self.words + unk_words)
-        self.chars = sorted(self.words + unk_chars)
+        self.words = sorted(set(self.words + unk_words))
+        self.chars = sorted(set(self.chars + unk_chars))
         self.wdict = {w: i for i, w in enumerate(self.words)}
         self.cdict = {c: i for i, c in enumerate(self.chars)}
         self.swi = self.wdict[self.SOS]
@@ -85,6 +85,7 @@ class Corpus(object):
         for wordseq, tagseq in sentences:
             wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
             tiseq = [self.tdict.get(t, -1) for t in tagseq]  # TODO
+            # 获取每个词汇的上下文
             x.append(self.get_context(wiseq, window))
             lens.append(len(tiseq))
             # 不足最大长度的部分用0填充
