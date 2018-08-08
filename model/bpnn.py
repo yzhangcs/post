@@ -19,7 +19,7 @@ class BPNN(nn.Module):
         super(BPNN, self).__init__()
 
         if pretrained is None:
-            self.embed = torch.randn(vocdim, embdim)
+            self.embed = nn.Embedding(vocdim, embdim)
         else:
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
         # 隐藏层
@@ -45,9 +45,6 @@ class BPNN(nn.Module):
     def fit(self, train_data, dev_data, file,
             epochs, batch_size, interval,
             eta, lmbda):
-        # 设置为训练模式
-        self.train()
-
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
@@ -60,30 +57,13 @@ class BPNN(nn.Module):
                                   shuffle=True,
                                   collate_fn=self.collate_fn)
         # 设置优化器为Adam
-        optimizer = optim.Adam(self.parameters(), lr=eta, weight_decay=lmbda)
-
+        self.optimizer = optim.Adam(params=self.parameters(),
+                                    lr=eta,
+                                    weight_decay=lmbda)
         for epoch in range(epochs):
             start = datetime.now()
-
-            for x, lens, y in train_loader:
-                # 清除梯度
-                optimizer.zero_grad()
-                # 获取掩码
-                mask = y.ge(0).t()  # [T, B]
-                # 打包数据
-                lens = lens.tolist()
-                x = torch.cat([x[i, :l] for i, l in enumerate(lens)])
-                y = torch.cat([y[i, :l] for i, l in enumerate(lens)])
-
-                out = self(x)
-                if self.crf is None:
-                    loss = self.lossfn(out, y)
-                else:
-                    emit = pad_sequence(torch.split(out, lens))  # [T, B, N]
-                    target = pad_sequence(torch.split(y, lens))  # [T, B]
-                    loss = self.crf(emit, target, mask)
-                loss.backward()
-                optimizer.step()
+            for batch in train_loader:
+                self.update(batch)
 
             print(f"Epoch: {epoch} / {epochs}:")
             loss, tp, total, accuracy = self.evaluate(train_data, batch_size)
@@ -106,6 +86,32 @@ class BPNN(nn.Module):
                 break
         print(f"max accuracy of dev is {max_accuracy:.2%} at epoch {max_e}")
         print(f"mean time of each epoch is {total_time / (epoch + 1)}s\n")
+
+    def update(self, batch):
+        # 设置为训练模式
+        self.train()
+        # 清除梯度
+        self.optimizer.zero_grad()
+
+        x, lens, y = batch
+        # 获取掩码
+        mask = y.ge(0).t()  # [T, B]
+        # 打包数据
+        lens = lens.tolist()
+        x = torch.cat([x[i, :l] for i, l in enumerate(lens)])
+        y = torch.cat([y[i, :l] for i, l in enumerate(lens)])
+
+        out = self(x)
+        if self.crf is None:
+            loss = self.lossfn(out, y)
+        else:
+            emit = pad_sequence(torch.split(out, lens))  # [T, B, N]
+            target = pad_sequence(torch.split(y, lens))  # [T, B]
+            loss = self.crf(emit, target, mask)
+        # 计算梯度
+        loss.backward()
+        # 更新参数
+        self.optimizer.step()
 
     @torch.no_grad()
     def evaluate(self, data, batch_size):
