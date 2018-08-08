@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
                                 pad_sequence)
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 
 from .crf import CRF
 
@@ -68,18 +68,17 @@ class LSTM(nn.Module):
         x = pack_padded_sequence(x, lens, True)
         x, hidden = self.wlstm(x)
         x, _ = pad_packed_sequence(x)
-        x = self.dropout(x)
+        if not self.wlstm.bidirectional:
+            x = self.dropout(x)
         return self.out(x)
 
-    def fit(self, train_data, dev_data, file,
+    def fit(self, trainset, devset, file,
             epochs, batch_size, interval,
             eta, lmbda):
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_accuracy = 0, 0.0
-        trainset = TensorDataset(*train_data)
-        devset = TensorDataset(*dev_data)
         # 设置数据加载器
         train_loader = DataLoader(dataset=trainset,
                                   batch_size=batch_size,
@@ -96,11 +95,11 @@ class LSTM(nn.Module):
                 self.update(batch)
 
             print(f"Epoch: {epoch} / {epochs}:")
-            loss, tp, total, accuracy = self.evaluate(train_data, batch_size)
+            loss, tp, total, accuracy = self.evaluate(trainset, batch_size)
             print(f"{'train:':<6} "
                   f"Loss: {loss:.4f} "
                   f"Accuracy: {tp} / {total} = {accuracy:.2%}")
-            loss, tp, total, accuracy = self.evaluate(dev_data, batch_size)
+            loss, tp, total, accuracy = self.evaluate(devset, batch_size)
             print(f"{'dev:':<6} "
                   f"Loss: {loss:.4f} "
                   f"Accuracy: {tp} / {total} = {accuracy:.2%}")
@@ -141,12 +140,11 @@ class LSTM(nn.Module):
         self.optimizer.step()
 
     @torch.no_grad()
-    def evaluate(self, data, batch_size):
+    def evaluate(self, dataset, batch_size):
         # 设置为评价模式
         self.eval()
 
         loss, tp, total = 0, 0, 0
-        dataset = TensorDataset(*data)
         loader = DataLoader(dataset, batch_size, collate_fn=self.collate_fn)
         for x, lens, cx, clens, y in loader:
             # 获取掩码

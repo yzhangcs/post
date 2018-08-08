@@ -42,30 +42,28 @@ if __name__ == '__main__':
     corpus = Corpus(config.ftrain)
     # 用预训练词嵌入扩展语料并返回词嵌入矩阵
     embed = corpus.extend(config.embed)
+    print(corpus)
 
-    print(f"\tsentences: {corpus.ns}\n"
-          f"\tdifferent words: {corpus.nw - 3}\n"
-          f"\tdifferent tags: {corpus.nt}")
-
-    # 获取数据
-    train_data = corpus.load(config.ftrain, args.char, config.window)
-    dev_data = corpus.load(config.fdev, args.char, config.window)
-    test_data = corpus.load(config.ftest, args.char, config.window)
-    print(f"\tsize of train_data: {len(train_data[0])}\n"
-          f"\tsize of dev_data: {len(dev_data[0])}")
-    file = args.file if args.file else config.netpkl
+    print("Load the dataset")
+    trainset = corpus.load(config.ftrain, args.char, config.window)
+    devset = corpus.load(config.fdev, args.char, config.window)
+    testset = corpus.load(config.ftest, args.char, config.window)
+    print(f"{'':2}size of trainset: {len(trainset)}\n"
+          f"{'':2}size of devset: {len(devset)}\n"
+          f"{'':2}size of testset: {len(testset)}\n")
+    file = args.file if args.file else config.netpt
 
     start = datetime.now()
 
     print("Create Neural Network")
     if args.lstm and not args.char:
         from model.lstm import LSTM
-        print(f"\tvocdim: {corpus.nw}\n"
-              f"\tembdim: {config.embdim}\n"
-              f"\twindow: {config.window}\n"
-              f"\thiddim: {config.hiddim}\n"
-              f"\toutdim: {corpus.nt}\n"
-              f"\tlossfn: {F.cross_entropy.__name__}")
+        print(f"{'':2}vocdim: {corpus.nw}\n"
+              f"{'':2}embdim: {config.embdim}\n"
+              f"{'':2}window: {config.window}\n"
+              f"{'':2}hiddim: {config.hiddim}\n"
+              f"{'':2}outdim: {corpus.nt}\n"
+              f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
         network = LSTM(vocdim=corpus.nw,
                        embdim=config.embdim,
                        window=config.window,
@@ -77,14 +75,14 @@ if __name__ == '__main__':
                        pretrained=embed)
     elif args.lstm and args.char:
         from model.clstm import LSTM
-        print(f"\tvocdim: {corpus.nw}\n"
-              f"\tchrdim: {corpus.nc}\n"
-              f"\tembdim: {config.embdim}\n"
-              f"\twindow: {config.window}\n"
-              f"\tcembdim: {config.cembdim}\n"
-              f"\thiddim: {config.hiddim}\n"
-              f"\toutdim: {corpus.nt}\n"
-              f"\tlossfn: {F.cross_entropy.__name__}")
+        print(f"{'':2}vocdim: {corpus.nw}\n"
+              f"{'':2}chrdim: {corpus.nc}\n"
+              f"{'':2}embdim: {config.embdim}\n"
+              f"{'':2}window: {config.window}\n"
+              f"{'':2}cembdim: {config.cembdim}\n"
+              f"{'':2}hiddim: {config.hiddim}\n"
+              f"{'':2}outdim: {corpus.nt}\n"
+              f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
         network = LSTM(vocdim=corpus.nw,
                        chrdim=corpus.nc,
                        embdim=config.embdim,
@@ -98,12 +96,12 @@ if __name__ == '__main__':
                        pretrained=embed)
     else:
         from model.bpnn import BPNN
-        print(f"\tvocdim: {corpus.nw}\n"
-              f"\tembdim: {config.embdim}\n"
-              f"\twindow: {config.window}\n"
-              f"\thiddim: {config.hiddim}\n"
-              f"\toutdim: {corpus.nt}\n"
-              f"\tlossfn: {F.cross_entropy.__name__}")
+        print(f"{'':2}vocdim: {corpus.nw}\n"
+              f"{'':2}embdim: {config.embdim}\n"
+              f"{'':2}window: {config.window}\n"
+              f"{'':2}hiddim: {config.hiddim}\n"
+              f"{'':2}outdim: {corpus.nt}\n"
+              f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
         network = BPNN(vocdim=corpus.nw,
                        embdim=config.embdim,
                        window=config.window,
@@ -112,14 +110,14 @@ if __name__ == '__main__':
                        lossfn=F.cross_entropy,
                        use_crf=args.crf,
                        pretrained=embed)
-    print(network)
+    print(f"{network}\n")
     print("Use Adam optimizer to train the network")
-    print(f"\tepochs: {config.epochs}\n"
-          f"\tbatch_size: {config.batch_size}\n"
-          f"\tinterval: {config.interval}\n"
-          f"\teta: {config.eta}\n"
-          f"\tlmbda: {config.lmbda}\n")
-    network.fit(train_data, dev_data, file,
+    print(f"{'':2}epochs: {config.epochs}\n"
+          f"{'':2}batch_size: {config.batch_size}\n"
+          f"{'':2}interval: {config.interval}\n"
+          f"{'':2}eta: {config.eta}\n"
+          f"{'':2}lmbda: {config.lmbda}\n")
+    network.fit(trainset, devset, file,
                 epochs=config.epochs,
                 batch_size=config.batch_size,
                 interval=config.interval,
@@ -128,7 +126,7 @@ if __name__ == '__main__':
 
     # 载入训练好的模型
     network = torch.load(file)
-    loss, tp, total, accuracy = network.evaluate(test_data, config.batch_size)
+    loss, tp, total, accuracy = network.evaluate(testset, config.batch_size)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
           f"Accuracy: {tp} / {total} = {accuracy:.2%}")

@@ -9,6 +9,37 @@ python == 3.6.5
 pytorch == 0.4.1
 ```
 
+## Usage
+
+### Commands
+
+```sh
+$ git clone https://github.com/zysite/post.git
+$ cd post
+# BiLSTM+CHAR+CRF
+$ python run.py --bidirectional --lstm --char --crf
+```
+
+### Arguments
+
+```sh
+$ python run.py -h
+usage: run.py [-h] [--crf] [--lstm] [--char] [--bidirectional] [--file FILE]
+              [--threads THREADS]
+
+Create Neural Network for POS Tagging.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --crf                 use crf
+  --lstm                use lstm
+  --char                use char representation
+  --bidirectional       use bidirectional lstm
+  --file FILE, -f FILE  set where to store the model
+  --threads THREADS, -t THREADS
+                        set max num of threads
+```
+
 ## Structures
 
 ```python
@@ -47,24 +78,5 @@ LSTM(
   (crf): CRF()
   (dropout): Dropout(p=0.5)
 )
-```
-
-## Usage
-
-```sh
-usage: run.py [-h] [--crf] [--lstm] [--char] [--bidirectional] [--file FILE]
-              [--threads THREADS]
-
-Create Neural Network for POS Tagging.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --crf                 use crf
-  --lstm                use lstm
-  --char                use char representation
-  --bidirectional       use bidirectional lstm
-  --file FILE, -f FILE  set where to store the model
-  --threads THREADS, -t THREADS
-                        set max num of threads
 ```
 

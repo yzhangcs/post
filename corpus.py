@@ -3,6 +3,7 @@
 import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
+from torch.utils.data import TensorDataset
 
 
 class Corpus(object):
@@ -106,8 +107,11 @@ class Corpus(object):
         clens = pad_sequence(clens, True)
         y = pad_sequence(y, True, padding_value=-1)
 
-        data = (x, lens, cx, clens, y) if charwise else (x, lens, y)
-        return data
+        if charwise:
+            dataset = TensorDataset(x, lens, cx, clens, y)
+        else:
+            dataset = TensorDataset(x, lens, y)
+        return dataset
 
     def get_context(self, wiseq, window=1):
         half = window // 2
@@ -115,6 +119,15 @@ class Corpus(object):
         wiseq = [self.swi] * half + wiseq + [self.ewi] * half
         return torch.tensor([wiseq[i:i + window] for i in range(length)],
                             dtype=torch.long)
+
+    def __repr__(self):
+        info = f"{self.__class__.__name__}(\n"
+        info += f"{'':2}num of sentences: {self.ns}\n"
+        info += f"{'':2}num of words: {self.nw}\n"
+        info += f"{'':2}num of tags: {self.nt}\n"
+        info += f"{'':2}num of chars: {self.nc}\n"
+        info += f")\n"
+        return info
 
     @staticmethod
     def preprocess(fdata):
