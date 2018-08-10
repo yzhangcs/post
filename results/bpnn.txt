@@ -1,3 +1,47 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cbf8a26ff7183fb0fe1815b7f95c98a624b982c744801acd8fcc90a4fbb8f424
-size 3146
+Set max num of threads to 4
+Preprocess the data
+	sentences: 46572
+	different words: 394634
+	different tags: 35
+	size of train_data: 46572
+	size of dev_data: 2079
+Create Neural Network
+	window: 5
+	vocab_dim: 394637
+	embed_dim: 100
+	hidden_dim: 300
+	out_dim: 35
+	lossfn: cross_entropy
+BPNN(
+  (embed): Embedding(394637, 100)
+  (hid): Linear(in_features=500, out_features=300, bias=True)
+  (out): Linear(in_features=300, out_features=35, bias=True)
+  (dropout): Dropout(p=0.5)
+)
+Use Adam optimizer to train the network
+	epochs: 100
+	batch_size: 25
+	interval: 10
+	eta: 0.001
+	lmbda: 0
+
+Epoch: 0 / 100:
+train: Loss: 0.2044 Accuracy: 985904 / 1057943 = 93.19%
+dev:   Loss: 0.2468 Accuracy: 55029 / 59955 = 91.78%
+0:06:22.431851s elapsed
+
+Epoch: 1 / 100:
+train: Loss: 0.1507 Accuracy: 1003651 / 1057943 = 94.87%
+dev:   Loss: 0.2147 Accuracy: 55551 / 59955 = 92.65%
+0:05:54.353919s elapsed
+
+Epoch: 2 / 100:
+train: Loss: 0.1201 Accuracy: 1013976 / 1057943 = 95.84%
+dev:   Loss: 0.2118 Accuracy: 55707 / 59955 = 92.91%
+0:05:52.701342s elapsed
+
+Epoch: 3 / 100:
+train: Loss: 0.1004 Accuracy: 1020921 / 1057943 = 96.50%
+dev:   Loss: 0.2132 Accuracy: 55718 / 59955 = 92.93%
+0:05:53.365207s elapsed
+
