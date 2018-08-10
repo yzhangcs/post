@@ -26,26 +26,26 @@ class LSTM(nn.Module):
         else:
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
 
-        self.clstm = CharLSTM(chrdim, embdim, cembdim,
-                              bidirectional=bidirectional)
+        self.char_lstm = CharLSTM(chrdim, embdim, cembdim,
+                                  bidirectional=bidirectional)
         # 词嵌入LSTM层
         if bidirectional:
-            self.wlstm = nn.LSTM(input_size=embdim * window + cembdim * 2,
-                                 hidden_size=hiddim // 2,
-                                 batch_first=True,
-                                 bidirectional=True)
+            self.word_lstm = nn.LSTM(input_size=embdim * window + cembdim * 2,
+                                     hidden_size=hiddim // 2,
+                                     batch_first=True,
+                                     bidirectional=True)
         else:
-            self.wlstm = nn.LSTM(input_size=embdim * window + cembdim,
-                                 hidden_size=hiddim,
-                                 batch_first=True,
-                                 bidirectional=False)
+            self.word_lstm = nn.LSTM(input_size=embdim * window + cembdim,
+                                     hidden_size=hiddim,
+                                     batch_first=True,
+                                     bidirectional=False)
 
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
-        self.dropout = nn.Dropout()
+        self.dropout = nn.Dropout(0.6)
         self.lossfn = lossfn
 
     def forward(self, x, lens, cx, clens):
@@ -58,7 +58,7 @@ class LSTM(nn.Module):
         # 获取字嵌入向量
         cx = torch.cat([cx[i, :l] for i, l in enumerate(lens)])
         clens = torch.cat([clens[i, :l] for i, l in enumerate(lens)])
-        cx = self.clstm(cx, clens)
+        cx = self.char_lstm(cx, clens)
         cx = pad_sequence(torch.split(cx, lens.tolist()), True)
 
         # 拼接词表示和字表示
@@ -66,10 +66,9 @@ class LSTM(nn.Module):
         x = self.dropout(x)
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
-        x, hidden = self.wlstm(x)
+        x, hidden = self.word_lstm(x)
         x, _ = pad_packed_sequence(x)
-        if not self.wlstm.bidirectional:
-            x = self.dropout(x)
+        x = self.dropout(x)
         return self.out(x)
 
     def fit(self, trainset, devset, file,
@@ -194,8 +193,6 @@ class CharLSTM(nn.Module):
 
     def forward(self, x, lens):
         B, T = x.shape
-        # 获取字嵌入向量
-        x = self.embed(x)
         # 获取长度由大到小排列的字序列索引
         lens, indices = lens.sort(descending=True)
         # 获取反向索引用来恢复原有的顺序
@@ -203,7 +200,10 @@ class CharLSTM(nn.Module):
         # 获取单词最大长度
         max_len = lens[0]
         # 序列按长度由大到小排列
-        x = x.view(B, T, -1)[indices, :max_len]
+        x = x[indices, :max_len]
+        # 获取字嵌入向量
+        x = self.embed(x)
+        # 打包数据
         x = pack_padded_sequence(x, lens, True)
 
         x, hidden = self.lstm(x)

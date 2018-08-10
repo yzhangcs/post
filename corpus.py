@@ -76,28 +76,25 @@ class Corpus(object):
         extended_embed[indices] = embed
         return extended_embed
 
-    def load(self, fdata, charwise=False, window=1):
+    def load(self, fdata, charwise=False, window=1, max_len=10):
         x, lens, cx, clens, y = [], [], [], [], []
         # 句子按照长度从大到小有序
         sentences = sorted(self.preprocess(fdata),
                            key=lambda x: len(x[0]),
                            reverse=True)
-        # 获取单词最大长度
-        max_len = max(max(len(w) for w in wordseq)
-                      for wordseq, tagseq in sentences)
         for wordseq, tagseq in sentences:
             wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
-            tiseq = [self.tdict[t] for t in tagseq]
+            tiseq = [self.tdict.get(t, 0) for t in tagseq]
             # 获取每个词汇的上下文
             x.append(self.get_context(wiseq, window))
             lens.append(len(tiseq))
             # 不足最大长度的部分用0填充
             cx.append(torch.tensor([
                 [self.cdict.get(c, self.uci)
-                 for c in w] + [0] * (max_len - len(w))
+                 for c in w[:max_len]] + [0] * (max_len - len(w))
                 for w in wordseq
             ]))
-            clens.append(torch.tensor([len(w) for w in wordseq],
+            clens.append(torch.tensor([min(len(w), max_len) for w in wordseq],
                                       dtype=torch.long))
             y.append(torch.tensor([ti for ti in tiseq], dtype=torch.long))
 

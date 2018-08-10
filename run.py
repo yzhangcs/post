@@ -22,6 +22,8 @@ if __name__ == '__main__':
                         dest='char', help='use char representation')
     parser.add_argument('--bidirectional', action='store_true', default=False,
                         dest='bidirectional', help='use bidirectional lstm')
+    parser.add_argument('--embed', '-e', action='store_true', default=False,
+                        dest='embed', help='use pretrained embedding file')
     parser.add_argument('--file', '-f', action='store', dest='file',
                         help='set where to store the model')
     parser.add_argument('--threads', '-t', action='store', dest='threads',
@@ -41,7 +43,7 @@ if __name__ == '__main__':
     # 以训练数据为基础建立语料
     corpus = Corpus(config.ftrain)
     # 用预训练词嵌入扩展语料并返回词嵌入矩阵
-    embed = corpus.extend(config.embed)
+    embed = corpus.extend(config.embed) if args.embed else None
     print(corpus)
 
     print("Load the dataset")
