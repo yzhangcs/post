@@ -60,55 +60,55 @@ if __name__ == '__main__':
     print("Create Neural Network")
     if args.lstm and not args.char:
         from model.lstm import LSTM
-        print(f"{'':2}vocdim: {corpus.nw}\n"
-              f"{'':2}embdim: {config.embdim}\n"
-              f"{'':2}window: {config.window}\n"
-              f"{'':2}hiddim: {config.hiddim}\n"
-              f"{'':2}outdim: {corpus.nt}\n"
+        print(f"{'':2}window: {config.window}\n"
+              f"{'':2}vocab_dim: {corpus.nw}\n"
+              f"{'':2}embed_dim: {config.embed_dim}\n"
+              f"{'':2}hidden_dim: {config.hidden_dim}\n"
+              f"{'':2}out_dim: {corpus.nt}\n"
               f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
-        network = LSTM(vocdim=corpus.nw,
-                       embdim=config.embdim,
-                       window=config.window,
-                       hiddim=config.hiddim,
-                       outdim=corpus.nt,
+        network = LSTM(window=config.window,
+                       vocab_dim=corpus.nw,
+                       embed_dim=config.embed_dim,
+                       hidden_dim=config.hidden_dim,
+                       out_dim=corpus.nt,
                        lossfn=F.cross_entropy,
                        use_crf=args.crf,
                        bidirectional=args.bidirectional,
                        pretrained=embed)
     elif args.lstm and args.char:
         from model.clstm import LSTM
-        print(f"{'':2}vocdim: {corpus.nw}\n"
-              f"{'':2}chrdim: {corpus.nc}\n"
-              f"{'':2}embdim: {config.embdim}\n"
-              f"{'':2}window: {config.window}\n"
-              f"{'':2}cembdim: {config.cembdim}\n"
-              f"{'':2}hiddim: {config.hiddim}\n"
-              f"{'':2}outdim: {corpus.nt}\n"
+        print(f"{'':2}window: {config.window}\n"
+              f"{'':2}vocab_dim: {corpus.nw}\n"
+              f"{'':2}char_dim: {corpus.nc}\n"
+              f"{'':2}embed_dim: {config.embed_dim}\n"
+              f"{'':2}char_embed_dim: {config.char_embed_dim}\n"
+              f"{'':2}hidden_dim: {config.hidden_dim}\n"
+              f"{'':2}out_dim: {corpus.nt}\n"
               f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
-        network = LSTM(vocdim=corpus.nw,
-                       chrdim=corpus.nc,
-                       embdim=config.embdim,
-                       cembdim=config.cembdim,
-                       window=config.window,
-                       hiddim=config.hiddim,
-                       outdim=corpus.nt,
+        network = LSTM(window=config.window,
+                       vocab_dim=corpus.nw,
+                       char_dim=corpus.nc,
+                       embed_dim=config.embed_dim,
+                       char_embed_dim=config.char_embed_dim,
+                       hidden_dim=config.hidden_dim,
+                       out_dim=corpus.nt,
                        lossfn=F.cross_entropy,
                        use_crf=args.crf,
                        bidirectional=args.bidirectional,
                        pretrained=embed)
     else:
         from model.bpnn import BPNN
-        print(f"{'':2}vocdim: {corpus.nw}\n"
-              f"{'':2}embdim: {config.embdim}\n"
-              f"{'':2}window: {config.window}\n"
-              f"{'':2}hiddim: {config.hiddim}\n"
-              f"{'':2}outdim: {corpus.nt}\n"
+        print(f"{'':2}window: {config.window}\n"
+              f"{'':2}vocab_dim: {corpus.nw}\n"
+              f"{'':2}embed_dim: {config.embed_dim}\n"
+              f"{'':2}hidden_dim: {config.hidden_dim}\n"
+              f"{'':2}out_dim: {corpus.nt}\n"
               f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
-        network = BPNN(vocdim=corpus.nw,
-                       embdim=config.embdim,
-                       window=config.window,
-                       hiddim=config.hiddim,
-                       outdim=corpus.nt,
+        network = BPNN(window=config.window,
+                       vocab_dim=corpus.nw,
+                       embed_dim=config.embed_dim,
+                       hidden_dim=config.hidden_dim,
+                       out_dim=corpus.nt,
                        lossfn=F.cross_entropy,
                        use_crf=args.crf,
                        pretrained=embed)

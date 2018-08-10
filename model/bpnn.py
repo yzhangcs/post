@@ -14,20 +14,20 @@ from .crf import CRF
 
 class BPNN(nn.Module):
 
-    def __init__(self, vocdim, embdim, window, hiddim, outdim,
+    def __init__(self, window, vocab_dim, embed_dim, hidden_dim, out_dim,
                  lossfn, use_crf=False, pretrained=None):
         super(BPNN, self).__init__()
 
         if pretrained is None:
-            self.embed = nn.Embedding(vocdim, embdim)
+            self.embed = nn.Embedding(vocab_dim, embed_dim)
         else:
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
         # 隐藏层
-        self.hid = nn.Linear(embdim * window, hiddim)
+        self.hid = nn.Linear(embed_dim * window, hidden_dim)
         # 输出层
-        self.out = nn.Linear(hiddim, outdim)
+        self.out = nn.Linear(hidden_dim, out_dim)
         # CRF层
-        self.crf = CRF(outdim) if use_crf else None
+        self.crf = CRF(out_dim) if use_crf else None
 
         self.dropout = nn.Dropout()
         self.lossfn = lossfn

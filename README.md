@@ -70,11 +70,11 @@ LSTM(
 # BiLSTM+CHAR+CRF
 LSTM(
   (embed): Embedding(383647, 100)
-  (char_lstm): CharLSTM(
+  (clstm): CharLSTM(
     (embed): Embedding(7477, 100)
     (lstm): LSTM(100, 100, batch_first=True, bidirectional=True)
   )
-  (word_lstm): LSTM(300, 150, batch_first=True, bidirectional=True)
+  (wlstm): LSTM(300, 150, batch_first=True, bidirectional=True)
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (dropout): Dropout(p=0.6)
