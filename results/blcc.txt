@@ -14,12 +14,12 @@ Load the dataset
 
 Create Neural Network
   window: 1
-  vocab_dim: 383647
-  char_dim: 7477
-  embed_dim: 100
-  char_embed_dim: 100
-  hidden_dim: 300
-  out_dim: 32
+  vocdim: 383647
+  chrdim: 7477
+  embdim: 100
+  char_embdim: 100
+  hiddim: 300
+  outdim: 32
   lossfn: cross_entropy
 
 LSTM(

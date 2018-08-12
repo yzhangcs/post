@@ -7,10 +7,10 @@ Preprocess the data
 	size of dev_data: 2079
 Create Neural Network
 	window: 5
-	vocab_dim: 394637
-	embed_dim: 100
-	hidden_dim: 300
-	out_dim: 35
+	vocdim: 394637
+	embdim: 100
+	hiddim: 300
+	outdim: 35
 	lossfn: cross_entropy
 BPNN(
   (embed): Embedding(394637, 100)

@@ -15,37 +15,35 @@ from .crf import CRF
 
 class LSTM(nn.Module):
 
-    def __init__(self, window, vocab_dim, char_dim,
-                 embed_dim, char_embed_dim, hidden_dim, out_dim,
+    def __init__(self, window, vocdim, chrdim,
+                 embdim, char_embdim, hiddim, outdim,
                  lossfn, use_crf=False, bidirectional=False,
                  pretrained=None):
         super(LSTM, self).__init__()
 
         if pretrained is None:
-            self.embed = torch.randn(vocab_dim, embed_dim)
+            self.embed = torch.randn(vocdim, embdim)
         else:
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
 
-        self.clstm = CharLSTM(char_dim, embed_dim, char_embed_dim,
+        self.clstm = CharLSTM(chrdim, embdim, char_embdim,
                               bidirectional=bidirectional)
         # 词嵌入LSTM层
         if bidirectional:
-            input_dim = embed_dim * window + char_embed_dim * 2
-            self.wlstm = nn.LSTM(input_size=input_dim,
-                                 hidden_size=hidden_dim // 2,
+            self.wlstm = nn.LSTM(input_size=embdim * window + char_embdim * 2,
+                                 hidden_size=hiddim // 2,
                                  batch_first=True,
                                  bidirectional=True)
         else:
-            input_dim = embed_dim * window + char_embed_dim
-            self.wlstm = nn.LSTM(input_size=input_dim,
-                                 hidden_size=hidden_dim,
+            self.wlstm = nn.LSTM(input_size=embdim * window + char_embdim,
+                                 hidden_size=hiddim,
                                  batch_first=True,
                                  bidirectional=False)
 
         # 输出层
-        self.out = nn.Linear(hidden_dim, out_dim)
+        self.out = nn.Linear(hiddim, outdim)
         # CRF层
-        self.crf = CRF(out_dim) if use_crf else None
+        self.crf = CRF(outdim) if use_crf else None
 
         self.dropout = nn.Dropout(0.6)
         self.lossfn = lossfn
@@ -183,13 +181,13 @@ class LSTM(nn.Module):
 
 class CharLSTM(nn.Module):
 
-    def __init__(self, char_dim, embed_dim, hidden_dim, bidirectional):
+    def __init__(self, chrdim, embdim, hiddim, bidirectional):
         super(CharLSTM, self).__init__()
 
         # 字嵌入
-        self.embed = nn.Embedding(char_dim, embed_dim)
+        self.embed = nn.Embedding(chrdim, embdim)
         # 字嵌入LSTM层
-        self.lstm = nn.LSTM(embed_dim, hidden_dim,
+        self.lstm = nn.LSTM(embdim, hiddim,
                             batch_first=True,
                             bidirectional=bidirectional)
 

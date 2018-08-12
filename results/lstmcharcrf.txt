@@ -6,12 +6,12 @@ Preprocess the data
 	size of train_data: 46572
 	size of dev_data: 2079
 Create Neural Network
-	vocab_dim: 59297
-	char_dim: 4679
-	embed_dim: 50
-	char_embed_dim: 50
-	hidden_dim: 300
-	out_dim: 35
+	vocdim: 59297
+	chrdim: 4679
+	embdim: 50
+	char_embdim: 50
+	hiddim: 300
+	outdim: 35
 	lossfn: cross_entropy
 LSTM(
   (embed): Embedding(59297, 50)

@@ -15,32 +15,32 @@ from .crf import CRF
 
 class LSTM(nn.Module):
 
-    def __init__(self, window, vocab_dim, embed_dim, hidden_dim, out_dim,
+    def __init__(self, window, vocdim, embdim, hiddim, outdim,
                  lossfn, use_crf=False, bidirectional=False,
                  pretrained=None):
         super(LSTM, self).__init__()
 
         if pretrained is None:
-            self.embed = nn.Embedding(vocab_dim, embed_dim)
+            self.embed = nn.Embedding(vocdim, embdim)
         else:
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
 
         # 词嵌入LSTM层
         if bidirectional:
-            self.lstm = nn.LSTM(input_size=embed_dim * window,
-                                hidden_size=hidden_dim // 2,
+            self.lstm = nn.LSTM(input_size=embdim * window,
+                                hidden_size=hiddim // 2,
                                 batch_first=True,
                                 bidirectional=True)
         else:
-            self.lstm = nn.LSTM(input_size=embed_dim * window,
-                                hidden_size=hidden_dim,
+            self.lstm = nn.LSTM(input_size=embdim * window,
+                                hidden_size=hiddim,
                                 batch_first=True,
                                 bidirectional=False)
 
         # 输出层
-        self.out = nn.Linear(hidden_dim, out_dim)
+        self.out = nn.Linear(hiddim, outdim)
         # CRF层
-        self.crf = CRF(out_dim) if use_crf else None
+        self.crf = CRF(outdim) if use_crf else None
 
         self.dropout = nn.Dropout()
         self.lossfn = lossfn

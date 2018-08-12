@@ -5,9 +5,9 @@ class Config(object):
 
     def __init__(self, lstm):
         self.window = 1 if lstm else 5
-        self.embed_dim = 100
-        self.char_embed_dim = 100
-        self.hidden_dim = 300
+        self.embdim = 100
+        self.char_embdim = 100
+        self.hiddim = 300
         self.batch_size = 25
         self.epochs = 100
         self.interval = 10

@@ -7,10 +7,10 @@ Preprocess the data
 	size of dev_data: 2079
 Create Neural Network
 	window: 1
-	vocab_dim: 59330
-	embed_dim: 50
-	hidden_dim: 300
-	out_dim: 35
+	vocdim: 59330
+	embdim: 50
+	hiddim: 300
+	outdim: 35
 	lossfn: cross_entropy
 LSTM(
   (embed): Embedding(59330, 50)
