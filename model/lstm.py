@@ -42,7 +42,7 @@ class LSTM(nn.Module):
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
-        self.dropout = nn.Dropout()
+        self.dropout = nn.Dropout(0.6)
         self.lossfn = lossfn
 
     def forward(self, x, lens):
@@ -75,6 +75,7 @@ class LSTM(nn.Module):
         self.optimizer = optim.Adam(params=self.parameters(),
                                     lr=eta,
                                     weight_decay=lmbda)
+
         for epoch in range(1, epochs + 1):
             start = datetime.now()
             for batch in train_loader:
