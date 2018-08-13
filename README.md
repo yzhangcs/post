@@ -17,14 +17,14 @@ pytorch == 0.4.1
 $ git clone https://github.com/zysite/post.git
 $ cd post
 # eg: BiLSTM+CHAR+CRF
-$ python run.py -e --bidirectional --lstm --char --crf
+$ python run.py -e --bi --lstm --char --crf
 ```
 
 ### Arguments
 
 ```sh
 $ python run.py -h
-usage: run.py [-h] [--crf] [--lstm] [--char] [--bidirectional] [--embed]
+usage: run.py [-h] [--crf] [--lstm] [--char] [--bi] [--embed]
               [--file FILE] [--threads THREADS]
 
 Create Neural Network for POS Tagging.
@@ -34,7 +34,7 @@ optional arguments:
   --crf                 use crf
   --lstm                use lstm
   --char                use char representation
-  --bidirectional       use bidirectional lstm
+  --bi                  use bidirectional lstm
   --embed, -e           use pretrained embedding file
   --file FILE, -f FILE  set where to store the model
   --threads THREADS, -t THREADS

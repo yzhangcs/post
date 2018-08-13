@@ -20,8 +20,8 @@ if __name__ == '__main__':
                         dest='lstm', help='use lstm')
     parser.add_argument('--char', action='store_true', default=False,
                         dest='char', help='use char representation')
-    parser.add_argument('--bidirectional', action='store_true', default=False,
-                        dest='bidirectional', help='use bidirectional lstm')
+    parser.add_argument('--bi', action='store_true', default=False,
+                        dest='bi', help='use bidirectional lstm')
     parser.add_argument('--embed', '-e', action='store_true', default=False,
                         dest='embed', help='use pretrained embedding file')
     parser.add_argument('--file', '-f', action='store', dest='file',
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                        outdim=corpus.nt,
                        lossfn=F.cross_entropy,
                        use_crf=args.crf,
-                       bidirectional=args.bidirectional,
+                       bidirectional=args.bi,
                        pretrained=embed)
     elif args.lstm and args.char:
         from model.clstm import LSTM
@@ -94,7 +94,7 @@ if __name__ == '__main__':
                        outdim=corpus.nt,
                        lossfn=F.cross_entropy,
                        use_crf=args.crf,
-                       bidirectional=args.bidirectional,
+                       bidirectional=args.bi,
                        pretrained=embed)
     else:
         from model.bpnn import BPNN

@@ -22,7 +22,7 @@ class LSTM(nn.Module):
         super(LSTM, self).__init__()
 
         if pretrained is None:
-            self.embed = torch.randn(vocdim, embdim)
+            self.embed = nn.Embedding(vocdim, embdim)
         else:
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
 
@@ -207,6 +207,6 @@ class CharLSTM(nn.Module):
         x = pack_padded_sequence(x, lens, True)
 
         x, hidden = self.lstm(x)
-        representations = torch.cat(torch.unbind(hidden[0]), dim=1)
+        reprs = torch.cat(torch.unbind(hidden[0]), dim=1)
         # 返回词的字符表示
-        return representations[reversed_indices]
+        return reprs[reversed_indices]
