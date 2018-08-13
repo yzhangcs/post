@@ -58,7 +58,7 @@ class BPNN(nn.Module):
         self.optimizer = optim.Adam(params=self.parameters(),
                                     lr=eta,
                                     weight_decay=lmbda)
-        for epoch in range(epochs):
+        for epoch in range(1, epochs + 1):
             start = datetime.now()
             for batch in train_loader:
                 self.update(batch)
@@ -83,7 +83,7 @@ class BPNN(nn.Module):
             elif epoch - max_e > interval:
                 break
         print(f"max accuracy of dev is {max_accuracy:.2%} at epoch {max_e}")
-        print(f"mean time of each epoch is {total_time / (epoch + 1)}s\n")
+        print(f"mean time of each epoch is {total_time / epoch}s\n")
 
     def update(self, batch):
         # 设置为训练模式
