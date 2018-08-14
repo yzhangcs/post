@@ -1,109 +1,133 @@
 Set max num of threads to 4
 Preprocess the data
-	sentences: 46572
-	different words: 394634
-	different tags: 35
-	size of train_data: 46572
-	size of dev_data: 2079
-Create Neural Network
-	window: 5
-	vocdim: 394637
-	embdim: 100
-	hiddim: 300
-	outdim: 35
-	lossfn: cross_entropy
-BPNN(
-  (embed): Embedding(394637, 100)
-  (hid): Linear(in_features=500, out_features=300, bias=True)
-  (out): Linear(in_features=300, out_features=35, bias=True)
-  (crf): CRF()
-  (dropout): Dropout(p=0.5)
+Corpus(
+  num of sentences: 16091
+  num of words: 383647
+  num of tags: 32
+  num of chars: 7477
 )
-Use Adam optimizer to train the network
-	epochs: 100
-	batch_size: 50
-	interval: 10
-	eta: 0.001
-	lmbda: 0
 
-Epoch: 0 / 100:
-train: Loss: 5.4135 Accuracy: 973753 / 1057943 = 92.04%
-dev:   Loss: 7.6899 Accuracy: 54357 / 59955 = 90.66%
-0:05:03.850142s elapsed
+Load the dataset
+  size of trainset: 16091
+  size of devset: 803
+  size of testset: 1910
+
+Create Neural Network
+  window: 5
+  vocdim: 383647
+  embdim: 100
+  hiddim: 300
+  outdim: 32
+  lossfn: cross_entropy
+
+BPNN(
+  (embed): Embedding(383647, 100)
+  (hid): Linear(in_features=500, out_features=300, bias=True)
+  (out): Linear(in_features=300, out_features=32, bias=True)
+  (crf): CRF()
+  (dropout): Dropout(p=0.6)
+)
+
+Use Adam optimizer to train the network
+  epochs: 100
+  batch_size: 25
+  interval: 10
+  eta: 0.001
+  lmbda: 0
 
 Epoch: 1 / 100:
-train: Loss: 3.5485 Accuracy: 1001263 / 1057943 = 94.64%
-dev:   Loss: 5.9695 Accuracy: 55485 / 59955 = 92.54%
-0:05:16.701795s elapsed
+train: Loss: 7.4725 Accuracy: 400395 / 437991 = 91.42%
+dev:   Loss: 7.3758 Accuracy: 18483 / 20454 = 90.36%
+0:03:13.420290s elapsed
 
 Epoch: 2 / 100:
-train: Loss: 2.6627 Accuracy: 1014334 / 1057943 = 95.88%
-dev:   Loss: 5.6546 Accuracy: 55705 / 59955 = 92.91%
-0:05:15.819929s elapsed
+train: Loss: 4.9400 Accuracy: 411946 / 437991 = 94.05%
+dev:   Loss: 5.7024 Accuracy: 18837 / 20454 = 92.09%
+0:03:09.258525s elapsed
 
 Epoch: 3 / 100:
-train: Loss: 2.0873 Accuracy: 1024350 / 1057943 = 96.82%
-dev:   Loss: 5.6161 Accuracy: 55883 / 59955 = 93.21%
-0:05:14.437684s elapsed
+train: Loss: 3.7244 Accuracy: 418104 / 437991 = 95.46%
+dev:   Loss: 5.2689 Accuracy: 18942 / 20454 = 92.61%
+0:03:10.967836s elapsed
 
 Epoch: 4 / 100:
-train: Loss: 1.5700 Accuracy: 1033234 / 1057943 = 97.66%
-dev:   Loss: 5.8532 Accuracy: 55849 / 59955 = 93.15%
-0:05:07.281672s elapsed
+train: Loss: 2.9444 Accuracy: 422273 / 437991 = 96.41%
+dev:   Loss: 5.1093 Accuracy: 18996 / 20454 = 92.87%
+0:02:34.326298s elapsed
 
 Epoch: 5 / 100:
-train: Loss: 1.2125 Accuracy: 1039515 / 1057943 = 98.26%
-dev:   Loss: 6.4022 Accuracy: 55747 / 59955 = 92.98%
-0:05:05.821405s elapsed
+train: Loss: 2.3524 Accuracy: 425502 / 437991 = 97.15%
+dev:   Loss: 5.1325 Accuracy: 19057 / 20454 = 93.17%
+0:02:50.584972s elapsed
 
 Epoch: 6 / 100:
-train: Loss: 0.9288 Accuracy: 1043967 / 1057943 = 98.68%
-dev:   Loss: 6.8842 Accuracy: 55716 / 59955 = 92.93%
-0:05:13.335644s elapsed
+train: Loss: 1.9014 Accuracy: 427738 / 437991 = 97.66%
+dev:   Loss: 5.1315 Accuracy: 19094 / 20454 = 93.35%
+0:03:32.924490s elapsed
 
 Epoch: 7 / 100:
-train: Loss: 0.7096 Accuracy: 1047723 / 1057943 = 99.03%
-dev:   Loss: 7.5383 Accuracy: 55594 / 59955 = 92.73%
-0:05:15.425812s elapsed
+train: Loss: 1.5537 Accuracy: 429705 / 437991 = 98.11%
+dev:   Loss: 5.3441 Accuracy: 19108 / 20454 = 93.42%
+0:03:38.088729s elapsed
 
 Epoch: 8 / 100:
-train: Loss: 0.5569 Accuracy: 1050019 / 1057943 = 99.25%
-dev:   Loss: 8.3923 Accuracy: 55513 / 59955 = 92.59%
-0:05:12.800018s elapsed
+train: Loss: 1.2708 Accuracy: 431333 / 437991 = 98.48%
+dev:   Loss: 5.6294 Accuracy: 19095 / 20454 = 93.36%
+0:03:37.373828s elapsed
 
 Epoch: 9 / 100:
-train: Loss: 0.4385 Accuracy: 1051897 / 1057943 = 99.43%
-dev:   Loss: 9.1500 Accuracy: 55486 / 59955 = 92.55%
-0:05:12.761712s elapsed
+train: Loss: 1.0553 Accuracy: 432460 / 437991 = 98.74%
+dev:   Loss: 5.7514 Accuracy: 19096 / 20454 = 93.36%
+0:03:38.284091s elapsed
 
 Epoch: 10 / 100:
-train: Loss: 0.3483 Accuracy: 1053344 / 1057943 = 99.57%
-dev:   Loss: 9.9258 Accuracy: 55429 / 59955 = 92.45%
-0:05:14.963891s elapsed
+train: Loss: 0.8598 Accuracy: 433451 / 437991 = 98.96%
+dev:   Loss: 6.1508 Accuracy: 19062 / 20454 = 93.19%
+0:03:38.780811s elapsed
 
 Epoch: 11 / 100:
-train: Loss: 0.2667 Accuracy: 1054537 / 1057943 = 99.68%
-dev:   Loss: 11.0326 Accuracy: 55376 / 59955 = 92.36%
-0:05:10.181894s elapsed
+train: Loss: 0.7270 Accuracy: 434119 / 437991 = 99.12%
+dev:   Loss: 6.4199 Accuracy: 19063 / 20454 = 93.20%
+0:03:41.166806s elapsed
 
 Epoch: 12 / 100:
-train: Loss: 0.2262 Accuracy: 1054996 / 1057943 = 99.72%
-dev:   Loss: 11.3237 Accuracy: 55412 / 59955 = 92.42%
-0:05:16.998704s elapsed
+train: Loss: 0.6061 Accuracy: 434931 / 437991 = 99.30%
+dev:   Loss: 6.9734 Accuracy: 19008 / 20454 = 92.93%
+0:03:39.067830s elapsed
 
 Epoch: 13 / 100:
-train: Loss: 0.1905 Accuracy: 1055694 / 1057943 = 99.79%
-dev:   Loss: 12.5664 Accuracy: 55251 / 59955 = 92.15%
-0:05:27.029584s elapsed
+train: Loss: 0.5037 Accuracy: 435443 / 437991 = 99.42%
+dev:   Loss: 7.4111 Accuracy: 19024 / 20454 = 93.01%
+0:03:41.268933s elapsed
 
 Epoch: 14 / 100:
-train: Loss: 0.1614 Accuracy: 1056107 / 1057943 = 99.83%
-dev:   Loss: 13.2011 Accuracy: 55274 / 59955 = 92.19%
-0:05:40.763992s elapsed
+train: Loss: 0.4340 Accuracy: 435735 / 437991 = 99.48%
+dev:   Loss: 7.7956 Accuracy: 19018 / 20454 = 92.98%
+0:03:42.909972s elapsed
 
-max accuracy of dev is 93.21% at epoch 3
-mean time of each epoch is 0:05:15.211592s
+Epoch: 15 / 100:
+train: Loss: 0.3805 Accuracy: 436023 / 437991 = 99.55%
+dev:   Loss: 8.3253 Accuracy: 19019 / 20454 = 92.98%
+0:03:40.984286s elapsed
 
-test:  Loss: 5.7118 Accuracy: 75879 / 81578 = 93.01%
-1:18:50.877077s elapsed
+Epoch: 16 / 100:
+train: Loss: 0.3261 Accuracy: 436325 / 437991 = 99.62%
+dev:   Loss: 8.7266 Accuracy: 19030 / 20454 = 93.04%
+0:03:43.328773s elapsed
+
+Epoch: 17 / 100:
+train: Loss: 0.2804 Accuracy: 436596 / 437991 = 99.68%
+dev:   Loss: 8.9735 Accuracy: 19044 / 20454 = 93.11%
+0:03:44.010294s elapsed
+
+Epoch: 18 / 100:
+train: Loss: 0.2675 Accuracy: 436658 / 437991 = 99.70%
+dev:   Loss: 9.5422 Accuracy: 18985 / 20454 = 92.82%
+0:03:43.771017s elapsed
+
+max accuracy of dev is 93.42% at epoch 7
+mean time of each epoch is 0:03:28.917654s
+
+test:  Loss: 5.9281 Accuracy: 46541 / 50319 = 92.49%
+1:02:46.275138s elapsed
 
