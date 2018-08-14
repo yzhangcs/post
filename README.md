@@ -44,15 +44,15 @@ optional arguments:
 ## Structures
 
 ```python
-# BPNN
-BPNN(
+# FFN
+FFN(
   (embed): Embedding(383647, 100)
   (hid): Linear(in_features=500, out_features=300, bias=True)
   (out): Linear(in_features=300, out_features=32, bias=True)
   (dropout): Dropout(p=0.5)
 )
-# BPNN+CRF
-BPNN(
+# FFN+CRF
+FFN(
   (embed): Embedding(383647, 100)
   (hid): Linear(in_features=500, out_features=300, bias=True)
   (out): Linear(in_features=300, out_features=32, bias=True)
