@@ -20,7 +20,7 @@ Create Neural Network
   outdim: 32
   lossfn: cross_entropy
 
-FFN(
+BPNN(
   (embed): Embedding(383647, 100)
   (hid): Linear(in_features=500, out_features=300, bias=True)
   (out): Linear(in_features=300, out_features=32, bias=True)

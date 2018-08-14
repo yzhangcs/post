@@ -12,11 +12,11 @@ from torch.nn.utils.rnn import pad_sequence
 from .crf import CRF
 
 
-class FFN(nn.Module):
+class BPNN(nn.Module):
 
     def __init__(self, window, vocdim, embdim, hiddim, outdim,
                  lossfn, use_crf=False, pretrained=None):
-        super(FFN, self).__init__()
+        super(BPNN, self).__init__()
 
         if pretrained is None:
             self.embed = nn.Embedding(vocdim, embdim)
