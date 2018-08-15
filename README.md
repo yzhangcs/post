@@ -2,6 +2,17 @@
 
 Several models for POS Tagging
 
+Already implemented models:
+
+* BPNN+CRF
+* BiLSTM+CRF
+* BiLSTM+CHAR+CRF
+
+TODO:
+
+* implement self-attention
+* avoid limitations of git-lfs(to download the big pretrained file)
+
 ## Requirements
 
 ```txt
@@ -80,4 +91,11 @@ LSTM(
   (dropout): Dropout(p=0.6)
 )
 ```
+
+## References
+
+* https://github.com/LiyuanLucasLiu/LM-LSTM-CRF
+* https://github.com/threelittlemonkeys/lstm-crf-pytorch
+* https://github.com/kmkurn/pytorch-crf
+* https://github.com/jadore801120/attention-is-all-you-need-pytorch
 
