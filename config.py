@@ -12,9 +12,8 @@ class Config(object):
         self.epochs = 100
         self.interval = 10
         self.eta = 0.001
-        self.lmbda = 0
-        self.ftrain = 'data/ctb5/train.pid.conll'
-        self.fdev = 'data/ctb5/dev.pid.conll'
-        self.ftest = 'data/ctb5/test.pid.conll'
+        self.ftrain = 'data/ctb5/train.conll'
+        self.fdev = 'data/ctb5/dev.conll'
+        self.ftest = 'data/ctb5/test.conll'
         self.embed = 'data/giga.100.txt'
         self.netpt = 'network.pt'

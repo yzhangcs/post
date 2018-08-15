@@ -39,7 +39,6 @@ Use Adam optimizer to train the network
   batch_size: 25
   interval: 10
   eta: 0.001
-  lmbda: 0
 
 Epoch: 1 / 100:
 train: Loss: 7.1582 Accuracy: 399226 / 437991 = 91.15%

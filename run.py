@@ -14,6 +14,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Create Neural Network for POS Tagging.'
     )
+    parser.add_argument('--attn', action='store_true', default=False,
+                        dest='attn', help='use attention')
     parser.add_argument('--crf', action='store_true', default=False,
                         dest='crf', help='use crf')
     parser.add_argument('--lstm', action='store_true', default=False,
@@ -59,7 +61,7 @@ if __name__ == '__main__':
 
     print("Create Neural Network")
     if args.lstm and not args.char:
-        from model.lstm import LSTM
+        from models.lstm import LSTM
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
@@ -76,7 +78,7 @@ if __name__ == '__main__':
                        bidirectional=args.bi,
                        pretrained=embed)
     elif args.lstm and args.char:
-        from model.clstm import LSTM
+        from models.clstm import LSTM
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}chrdim: {corpus.nc}\n"
@@ -93,11 +95,12 @@ if __name__ == '__main__':
                        hiddim=config.hiddim,
                        outdim=corpus.nt,
                        lossfn=F.cross_entropy,
+                       use_attn=args.attn,
                        use_crf=args.crf,
                        bidirectional=args.bi,
                        pretrained=embed)
     else:
-        from model.bpnn import BPNN
+        from models.bpnn import BPNN
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
@@ -117,18 +120,16 @@ if __name__ == '__main__':
     print(f"{'':2}epochs: {config.epochs}\n"
           f"{'':2}batch_size: {config.batch_size}\n"
           f"{'':2}interval: {config.interval}\n"
-          f"{'':2}eta: {config.eta}\n"
-          f"{'':2}lmbda: {config.lmbda}\n")
+          f"{'':2}eta: {config.eta}\n")
     network.fit(trainset, devset, file,
                 epochs=config.epochs,
                 batch_size=config.batch_size,
                 interval=config.interval,
-                eta=config.eta,
-                lmbda=config.lmbda)
+                eta=config.eta)
 
     # 载入训练好的模型
     network = torch.load(file)
-    loss, tp, total, accuracy = network.evaluate(testset, config.batch_size)
+    loss, tp, total, accuracy = network.evaluate(testset)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
           f"Accuracy: {tp} / {total} = {accuracy:.2%}")
