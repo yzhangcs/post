@@ -10,12 +10,12 @@ from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
                                 pad_sequence)
 from torch.utils.data import DataLoader
 
-from modules.crf import CRF
+from modules import CRF
 
 
 class LSTM(nn.Module):
 
-    def __init__(self, window, vocdim, embdim, hiddim, outdim,
+    def __init__(self, vocdim, embdim, hiddim, outdim,
                  lossfn, use_crf=False, bidirectional=False,
                  pretrained=None):
         super(LSTM, self).__init__()
@@ -27,12 +27,12 @@ class LSTM(nn.Module):
 
         # 词嵌入LSTM层
         if bidirectional:
-            self.lstm = nn.LSTM(input_size=embdim * window,
+            self.lstm = nn.LSTM(input_size=embdim,
                                 hidden_size=hiddim // 2,
                                 batch_first=True,
                                 bidirectional=True)
         else:
-            self.lstm = nn.LSTM(input_size=embdim * window,
+            self.lstm = nn.LSTM(input_size=embdim,
                                 hidden_size=hiddim,
                                 batch_first=True,
                                 bidirectional=False)
@@ -46,11 +46,9 @@ class LSTM(nn.Module):
         self.lossfn = lossfn
 
     def forward(self, x, lens):
-        B, T, N = x.shape
+        B, T = x.shape
         # 获取词嵌入向量
         x = self.embed(x)
-        # 拼接上下文
-        x = x.view(B, T, -1)
 
         # 打包数据
         x = pack_padded_sequence(x, lens, True)

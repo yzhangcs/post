@@ -3,8 +3,8 @@
 
 class Config(object):
 
-    def __init__(self, lstm):
-        self.window = 1 if lstm else 5
+    def __init__(self, bpnn):
+        self.window = 5 if bpnn else 1
         self.embdim = 100
         self.char_embdim = 100
         self.hiddim = 300

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from .bpnn import BPNN
-from .clstm import LSTM_CHAR
-from .lstm import LSTM
 from .attn import ATTN
+from .bpnn import BPNN
+from .lstm import LSTM
+from .lstm_char import LSTM_CHAR
 
 __all__ = ('BPNN', 'LSTM_CHAR', 'LSTM', 'ATTN')

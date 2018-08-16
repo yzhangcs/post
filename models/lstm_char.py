@@ -10,13 +10,12 @@ from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
                                 pad_sequence)
 from torch.utils.data import DataLoader
 
-from modules.crf import CRF
-from modules.attn import ATTN
+from modules import CRF, CharLSTM, Layer
 
 
 class LSTM_CHAR(nn.Module):
 
-    def __init__(self, window, vocdim, chrdim,
+    def __init__(self, vocdim, chrdim,
                  embdim, char_embdim, hiddim, outdim,
                  lossfn, use_attn=False, use_crf=False, bidirectional=False,
                  pretrained=None):
@@ -31,18 +30,18 @@ class LSTM_CHAR(nn.Module):
                               bidirectional=bidirectional)
         # 词嵌入LSTM层
         if bidirectional:
-            self.wlstm = nn.LSTM(input_size=embdim * window + char_embdim * 2,
+            self.wlstm = nn.LSTM(input_size=embdim + char_embdim * 2,
                                  hidden_size=hiddim // 2,
                                  batch_first=True,
                                  bidirectional=True)
         else:
-            self.wlstm = nn.LSTM(input_size=embdim * window + char_embdim,
+            self.wlstm = nn.LSTM(input_size=embdim + char_embdim,
                                  hidden_size=hiddim,
                                  batch_first=True,
                                  bidirectional=False)
         # Attention层
-        self.attn = ATTN(3, hiddim, hiddim, hiddim,
-                         hiddim) if use_attn else None
+        self.attn = Layer(3, hiddim, hiddim, hiddim,
+                          hiddim) if use_attn else None
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
@@ -52,11 +51,9 @@ class LSTM_CHAR(nn.Module):
         self.lossfn = lossfn
 
     def forward(self, x, lens, mask, cx, clens):
-        B, T, N = x.shape
+        B, T = x.shape
         # 获取词嵌入向量
         x = self.embed(x)
-        # 拼接上下文
-        x = x.view(B, T, -1)
 
         # 获取字嵌入向量
         cx = self.clstm(cx[mask], clens[mask])
@@ -184,37 +181,3 @@ class LSTM_CHAR(nn.Module):
         y = torch.stack(y)[:, :max_len]
 
         return x, lens, cx, clens, y
-
-
-class CharLSTM(nn.Module):
-
-    def __init__(self, chrdim, embdim, hiddim, bidirectional):
-        super(CharLSTM, self).__init__()
-
-        # 字嵌入
-        self.embed = nn.Embedding(chrdim, embdim)
-        # 字嵌入LSTM层
-        self.lstm = nn.LSTM(embdim, hiddim,
-                            batch_first=True,
-                            bidirectional=bidirectional)
-
-    def forward(self, x, lens):
-        B, T = x.shape
-        # 获取长度由大到小排列的字序列索引
-        lens, indices = lens.sort(descending=True)
-        # 获取反向索引用来恢复原有的顺序
-        _, reversed_indices = indices.sort()
-        # 获取单词最大长度
-        max_len = lens[0]
-        # 序列按长度由大到小排列
-        x = x[indices, :max_len]
-        # 获取字嵌入向量
-        x = self.embed(x)
-        # 打包数据
-        x = pack_padded_sequence(x, lens, True)
-
-        x, hidden = self.lstm(x)
-        # 获取词的字符表示
-        reprs = torch.cat(torch.unbind(hidden[0]), dim=1)[reversed_indices]
-
-        return reprs

@@ -15,10 +15,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Create Neural Network for POS Tagging.'
     )
-    parser.add_argument('--attn', action='store_true', default=False,
-                        dest='attn', help='use attention')
     parser.add_argument('--crf', action='store_true', default=False,
                         dest='crf', help='use crf')
+    parser.add_argument('--attn', action='store_true', default=False,
+                        dest='attn', help='use attention')
+    parser.add_argument('--bpnn', action='store_true', default=False,
+                        dest='bpnn', help='use bpnn')
     parser.add_argument('--lstm', action='store_true', default=False,
                         dest='lstm', help='use lstm')
     parser.add_argument('--char', action='store_true', default=False,
@@ -40,7 +42,7 @@ if __name__ == '__main__':
     print(f"Set max num of threads to {args.threads}")
 
     # 根据参数读取配置
-    config = Config(args.lstm)
+    config = Config(args.bpnn)
 
     print("Preprocess the data")
     # 以训练数据为基础建立语料
@@ -62,14 +64,12 @@ if __name__ == '__main__':
 
     print("Create Neural Network")
     if args.lstm and not args.char:
-        print(f"{'':2}window: {config.window}\n"
-              f"{'':2}vocdim: {corpus.nw}\n"
+        print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
               f"{'':2}hiddim: {config.hiddim}\n"
               f"{'':2}outdim: {corpus.nt}\n"
               f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
-        network = LSTM(window=config.window,
-                       vocdim=corpus.nw,
+        network = LSTM(vocdim=corpus.nw,
                        embdim=config.embdim,
                        hiddim=config.hiddim,
                        outdim=corpus.nt,
@@ -78,16 +78,14 @@ if __name__ == '__main__':
                        bidirectional=args.bi,
                        pretrained=embed)
     elif args.lstm and args.char:
-        print(f"{'':2}window: {config.window}\n"
-              f"{'':2}vocdim: {corpus.nw}\n"
+        print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}chrdim: {corpus.nc}\n"
               f"{'':2}embdim: {config.embdim}\n"
               f"{'':2}char_embdim: {config.char_embdim}\n"
               f"{'':2}hiddim: {config.hiddim}\n"
               f"{'':2}outdim: {corpus.nt}\n"
               f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
-        network = LSTM_CHAR(window=config.window,
-                            vocdim=corpus.nw,
+        network = LSTM_CHAR(vocdim=corpus.nw,
                             chrdim=corpus.nc,
                             embdim=config.embdim,
                             char_embdim=config.char_embdim,
@@ -98,6 +96,17 @@ if __name__ == '__main__':
                             use_crf=args.crf,
                             bidirectional=args.bi,
                             pretrained=embed)
+    elif args.attn:
+        print(f"{'':2}vocdim: {corpus.nw}\n"
+              f"{'':2}embdim: {config.embdim}\n"
+              f"{'':2}outdim: {corpus.nt}\n"
+              f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
+        network = ATTN(vocdim=corpus.nw,
+                       embdim=config.embdim,
+                       outdim=corpus.nt,
+                       lossfn=F.cross_entropy,
+                       use_crf=args.crf,
+                       pretrained=embed)
     else:
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"

@@ -6,43 +6,31 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.nn.utils.rnn import pad_sequence
+from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
+                                pad_sequence)
 from torch.utils.data import DataLoader
 
-from modules import CRF
+from modules import CRF, Layer
 
 
-class BPNN(nn.Module):
+class ATTN(nn.Module):
 
-    def __init__(self, window, vocdim, embdim, hiddim, outdim,
+    def __init__(self, vocdim, embdim, outdim,
                  lossfn, use_crf=False, pretrained=None):
-        super(BPNN, self).__init__()
+        super(ATTN, self).__init__()
 
-        if pretrained is None:
-            self.embed = nn.Embedding(vocdim, embdim)
-        else:
-            self.embed = nn.Embedding.from_pretrained(pretrained, False)
-
-        # 隐藏层
-        self.hid = nn.Linear(embdim * window, hiddim)
+        self.encoder = Encoder(vocdim, embdim, Dm=embdim,
+                               pretrained=pretrained)
         # 输出层
-        self.out = nn.Linear(hiddim, outdim)
+        self.decoder = nn.Linear(embdim, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
-        self.dropout = nn.Dropout()
         self.lossfn = lossfn
 
-    def forward(self, x):
-        L, N = x.shape
-        # 获取词嵌入向量
-        x = self.embed(x)
-        # 拼接上下文
-        x = x.view(L, -1)
-
-        x = self.dropout(F.relu(self.hid(x)))
-
-        return self.out(x)
+    def forward(self, x, mask):
+        x = self.encoder(x, mask)
+        return self.decoder(x)
 
     def fit(self, trainset, devset, file,
             epochs, batch_size, interval, eta):
@@ -94,16 +82,15 @@ class BPNN(nn.Module):
         x, lens, y = batch
         # 获取掩码
         mask = y.ge(0)
-        # 打包数据
-        lens = lens.tolist()
         y = y[mask]
 
-        out = self(x[mask])
+        out = self(x, mask)
         if self.crf is None:
+            out = out[mask]
             loss = self.lossfn(out, y)
         else:
-            emit = pad_sequence(torch.split(out, lens))  # [T, B, N]
-            target = pad_sequence(torch.split(y, lens))  # [T, B]
+            emit = out.transpose(0, 1)  # [T, B, N]
+            target = pad_sequence(torch.split(y, lens.tolist()))  # [T, B]
             mask = mask.t()  # [T, B]
             loss = self.crf(emit, target, mask)
         # 计算梯度
@@ -121,22 +108,21 @@ class BPNN(nn.Module):
         for x, lens, y in loader:
             # 获取掩码
             mask = y.ge(0)
-            # 打包数据
-            lens = lens.tolist()
             y = y[mask]
 
-            out = self.forward(x[mask])
+            out = self.forward(x, mask)
             if self.crf is None:
+                out = out[mask]
                 predict = torch.argmax(out, dim=1)
                 loss += self.lossfn(out, y)
             else:
-                emit = pad_sequence(torch.split(out, lens))  # [T, B, N]
-                target = pad_sequence(torch.split(y, lens))  # [T, B]
+                emit = out.transpose(0, 1)  # [T, B, N]
+                target = pad_sequence(torch.split(y, lens.tolist()))  # [T, B]
                 mask = mask.t()  # [T, B]
                 predict = self.crf.viterbi(emit, mask)
                 loss += self.crf(emit, target, mask)
-            tp += torch.sum(y == predict).item()
-            total += sum(lens)
+            tp += torch.sum(predict == y).item()
+            total += lens.sum().item()
         loss /= len(loader)
 
         return loss, tp, total, tp / total
@@ -153,3 +139,45 @@ class BPNN(nn.Module):
         y = torch.stack(y)[:, :max_len]
 
         return x, lens, y
+
+
+class Encoder(nn.Module):
+
+    def __init__(self, vocdim, embdim,
+                 L=6, H=5, Dk=20, Dv=20, Dm=100, Dh=200, p=0.1,
+                 pretrained=None):
+        super(Encoder, self).__init__()
+
+        self.Dm = Dm
+        self.embdim = embdim
+
+        if pretrained is None:
+            self.embed = nn.Embedding(vocdim, embdim)
+        else:
+            self.embed = nn.Embedding.from_pretrained(pretrained, False)
+
+        self.layers = nn.ModuleList([
+            Layer(H, Dm, Dh, Dk, Dv, p) for _ in range(L)
+        ])
+
+    def init_pos(self, posdim, embdim):
+        embed = torch.tensor([
+            [pos / 10000 ** (i // 2 * 2 / embdim)
+             for i in range(embdim)] for pos in range(posdim)
+        ])
+        embed[:, 0::2] = torch.sin(embed[:, 0::2])
+        embed[:, 1::2] = torch.cos(embed[:, 1::2])
+        return embed
+
+    def forward(self, x, mask):
+        B, T = x.shape
+        pos_embed = self.init_pos(T, self.embdim)
+
+        x = self.embed(x)
+        x += pos_embed[torch.arange(T)]
+
+        out = x
+        for layer in self.layers:
+            out = layer(out, mask)
+
+        return out

@@ -5,12 +5,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class ATTN(nn.Module):
+class Layer(nn.Module):
 
     def __init__(self, H, Dm, Dh, Dk, Dv, p=0.1):
-        super(ATTN, self).__init__()
+        super(Layer, self).__init__()
 
-        self.attn = MultiHeadAttention(H, Dm, Dk, Dv, p)
+        self.attn = MultiHeadAttn(H, Dm, Dk, Dv, p)
         self.ffn = PosWiseFFN(Dm, Dh, p)
 
     def forward(self, x, mask=None):
@@ -19,15 +19,14 @@ class ATTN(nn.Module):
         return out
 
 
-class MultiHeadAttention(nn.Module):
+class MultiHeadAttn(nn.Module):
 
     def __init__(self, H, Dm, Dk, Dv, p=0.1):
-        super(MultiHeadAttention, self).__init__()
+        super(MultiHeadAttn, self).__init__()
 
         self.H = H
         self.Dk = Dk
         self.Dv = Dv
-
         self.wq = nn.init.xavier_normal_(torch.empty(H, Dm, Dk))
         self.wk = nn.init.xavier_normal_(torch.empty(H, Dm, Dk))
         self.wv = nn.init.xavier_normal_(torch.empty(H, Dm, Dv))
