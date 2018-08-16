@@ -8,6 +8,7 @@ import torch.nn.functional as F
 
 from config import Config
 from corpus import Corpus
+from models import ATTN, BPNN, LSTM, LSTM_CHAR
 
 if __name__ == '__main__':
     # 解析命令参数
@@ -61,7 +62,6 @@ if __name__ == '__main__':
 
     print("Create Neural Network")
     if args.lstm and not args.char:
-        from models.lstm import LSTM
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
@@ -78,7 +78,6 @@ if __name__ == '__main__':
                        bidirectional=args.bi,
                        pretrained=embed)
     elif args.lstm and args.char:
-        from models.clstm import LSTM
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}chrdim: {corpus.nc}\n"
@@ -87,20 +86,19 @@ if __name__ == '__main__':
               f"{'':2}hiddim: {config.hiddim}\n"
               f"{'':2}outdim: {corpus.nt}\n"
               f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
-        network = LSTM(window=config.window,
-                       vocdim=corpus.nw,
-                       chrdim=corpus.nc,
-                       embdim=config.embdim,
-                       char_embdim=config.char_embdim,
-                       hiddim=config.hiddim,
-                       outdim=corpus.nt,
-                       lossfn=F.cross_entropy,
-                       use_attn=args.attn,
-                       use_crf=args.crf,
-                       bidirectional=args.bi,
-                       pretrained=embed)
+        network = LSTM_CHAR(window=config.window,
+                            vocdim=corpus.nw,
+                            chrdim=corpus.nc,
+                            embdim=config.embdim,
+                            char_embdim=config.char_embdim,
+                            hiddim=config.hiddim,
+                            outdim=corpus.nt,
+                            lossfn=F.cross_entropy,
+                            use_attn=args.attn,
+                            use_crf=args.crf,
+                            bidirectional=args.bi,
+                            pretrained=embed)
     else:
-        from models.bpnn import BPNN
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"

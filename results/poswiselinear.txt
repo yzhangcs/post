@@ -30,7 +30,7 @@ LSTM(
     (lstm): LSTM(100, 100, batch_first=True, bidirectional=True)
   )
   (wlstm): LSTM(300, 150, batch_first=True, bidirectional=True)
-  (attn): Attention(
+  (attn): ATTN(
     (attn): MultiHeadAttention(
       (attn): ScaledDotProductAttention(
         (dropout): Dropout(p=0.1)

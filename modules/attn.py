@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Attention(nn.Module):
+class ATTN(nn.Module):
 
     def __init__(self, H, Dm, Dh, Dk, Dv, p=0.1):
-        super(Attention, self).__init__()
+        super(ATTN, self).__init__()
 
         self.attn = MultiHeadAttention(H, Dm, Dk, Dv, p)
         self.ffn = PosWiseFFN(Dm, Dh, p)

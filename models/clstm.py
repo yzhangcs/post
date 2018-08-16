@@ -11,10 +11,10 @@ from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
 from torch.utils.data import DataLoader
 
 from modules.crf import CRF
-from modules.attn import Attention
+from modules.attn import ATTN
 
 
-class LSTM(nn.Module):
+class LSTM_CHAR(nn.Module):
 
     def __init__(self, window, vocdim, chrdim,
                  embdim, char_embdim, hiddim, outdim,
@@ -41,8 +41,8 @@ class LSTM(nn.Module):
                                  batch_first=True,
                                  bidirectional=False)
         # Attention层
-        self.attn = Attention(3, hiddim, hiddim,
-                              hiddim, hiddim) if use_attn else None
+        self.attn = ATTN(3, hiddim, hiddim, hiddim,
+                         hiddim) if use_attn else None
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
