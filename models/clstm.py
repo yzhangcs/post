@@ -41,7 +41,8 @@ class LSTM(nn.Module):
                                  batch_first=True,
                                  bidirectional=False)
         # Attention层
-        self.attn = Attention(3, hiddim, hiddim, hiddim) if use_attn else None
+        self.attn = Attention(3, hiddim, hiddim,
+                              hiddim, hiddim) if use_attn else None
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
@@ -69,7 +70,7 @@ class LSTM(nn.Module):
         x, hidden = self.wlstm(x)
         x, _ = pad_packed_sequence(x, True)
         if self.attn is not None:
-            x = self.attn(x, x, x, mask)
+            x = self.attn(x, mask)
         x = self.dropout(x)
 
         return self.out(x)

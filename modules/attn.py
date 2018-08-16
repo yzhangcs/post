@@ -8,8 +8,22 @@ import torch.nn.functional as F
 
 class Attention(nn.Module):
 
-    def __init__(self, H, Dm, Dk, Dv, p=0.1):
+    def __init__(self, H, Dm, Dh, Dk, Dv, p=0.1):
         super(Attention, self).__init__()
+
+        self.attn = MultiHeadAttention(H, Dm, Dk, Dv, p)
+        self.ffn = PosWiseFFN(Dm, Dh, p)
+
+    def forward(self, x, mask=None):
+        out = self.attn(x, x, x, mask)
+        out = self.ffn(out)
+        return out
+
+
+class MultiHeadAttention(nn.Module):
+
+    def __init__(self, H, Dm, Dk, Dv, p=0.1):
+        super(MultiHeadAttention, self).__init__()
 
         self.H = H
         self.Dk = Dk
@@ -19,19 +33,18 @@ class Attention(nn.Module):
         self.wk = nn.init.xavier_normal_(torch.empty(H, Dm, Dk))
         self.wv = nn.init.xavier_normal_(torch.empty(H, Dm, Dv))
 
-        self.attention = ScaledDotProductAttention(Dm)
-        self.layer_norm = nn.LayerNorm(Dm)
+        self.attn = ScaledDotProductAttention(Dm)
+        self.norm = nn.LayerNorm(Dm)
         self.proj = nn.Linear(H * Dv, Dm)
 
         self.dropout = nn.Dropout(p)
 
     def forward(self, q, k, v, mask=None):
+        residual = q
         B, Lq, Dm = q.shape
         B, Lk, Dm = k.shape
         B, Lv, Dm = v.shape
         H, Dk, Dv = self.H, self.Dk, self.Dv
-
-        residual = q
 
         # [H * B, Lq, Dk]
         q = torch.matmul(q.unsqueeze(1), self.wq).view(-1, Lq, Dk)
@@ -43,14 +56,14 @@ class Attention(nn.Module):
             mask = mask.repeat(H, 1)
 
         # [H * B, Lq, Dv]
-        out, _ = self.attention(q, k, v, mask)
+        out, _ = self.attn(q, k, v, mask)
         # [B, Lq, H * Dv]
         out = torch.cat(torch.split(out, B, dim=0), dim=-1)
 
         out = self.proj(out)
         out = self.dropout(out)
 
-        return self.layer_norm(out + residual)
+        return self.norm(out + residual)
 
 
 class ScaledDotProductAttention(nn.Module):
@@ -70,3 +83,21 @@ class ScaledDotProductAttention(nn.Module):
         out = torch.matmul(attn, v)
 
         return out, attn
+
+
+class PosWiseFFN(nn.Module):
+
+    def __init__(self, Dm, Dh, p=0.1):
+        super(PosWiseFFN, self).__init__()
+
+        self.w1 = nn.Linear(Dm, Dh)
+        self.w2 = nn.Linear(Dh, Dm)
+        self.norm = nn.LayerNorm(Dm)
+        self.dropout = nn.Dropout(p)
+
+    def forward(self, x):
+        residual = x
+        out = F.relu(self.w1(x))
+        out = self.w2(out)
+        out = self.dropout(out)
+        return self.norm(out + residual)
