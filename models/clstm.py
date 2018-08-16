@@ -20,7 +20,7 @@ class LSTM_CHAR(nn.Module):
                  embdim, char_embdim, hiddim, outdim,
                  lossfn, use_attn=False, use_crf=False, bidirectional=False,
                  pretrained=None):
-        super(LSTM, self).__init__()
+        super(LSTM_CHAR, self).__init__()
 
         if pretrained is None:
             self.embed = nn.Embedding(vocdim, embdim)
