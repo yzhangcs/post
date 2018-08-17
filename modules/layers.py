@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 class Layer(nn.Module):
 
-    def __init__(self, H, Dm, Dh, Dk, Dv, p=0.1):
+    def __init__(self, H, Dm, Dh, Dk, Dv, p=0.2):
         super(Layer, self).__init__()
 
         self.attn = MultiHeadAttn(H, Dm, Dk, Dv, p)
@@ -21,7 +21,7 @@ class Layer(nn.Module):
 
 class MultiHeadAttn(nn.Module):
 
-    def __init__(self, H, Dm, Dk, Dv, p=0.1):
+    def __init__(self, H, Dm, Dk, Dv, p=0.2):
         super(MultiHeadAttn, self).__init__()
 
         self.H = H
@@ -31,7 +31,6 @@ class MultiHeadAttn(nn.Module):
         self.wk = nn.init.xavier_normal_(torch.empty(H, Dm, Dk))
         self.wv = nn.init.xavier_normal_(torch.empty(H, Dm, Dv))
 
-        self.attn = ScaledDotProductAttention(Dm)
         self.norm = nn.LayerNorm(Dm)
         self.proj = nn.Linear(H * Dv, Dm)
 
@@ -43,6 +42,7 @@ class MultiHeadAttn(nn.Module):
         B, Lk, Dm = k.shape
         B, Lv, Dm = v.shape
         H, Dk, Dv = self.H, self.Dk, self.Dv
+        scale = Dm ** 0.5
 
         # [H * B, Lq, Dk]
         q = torch.matmul(q.unsqueeze(1), self.wq).view(-1, Lq, Dk)
@@ -50,11 +50,18 @@ class MultiHeadAttn(nn.Module):
         k = torch.matmul(k.unsqueeze(1), self.wk).view(-1, Lk, Dk)
         # [H * B, Lv, Dv]
         v = torch.matmul(v.unsqueeze(1), self.wv).view(-1, Lv, Dv)
+
+        # Scaled Dot-Product Attention
+        attn = torch.matmul(q, k.transpose(-1, -2)) / scale
         if mask is not None:
             mask = mask.repeat(H, 1)
-
+            attn[1 - mask] = -float('inf')
+        # [H * B, Lq, Lk]
+        attn = F.softmax(attn, dim=0)
+        attn = self.dropout(attn)
         # [H * B, Lq, Dv]
-        out, _ = self.attn(q, k, v, mask)
+        out = torch.matmul(attn, v)
+
         # [B, Lq, H * Dv]
         out = torch.cat(torch.split(out, B, dim=0), dim=-1)
 
@@ -64,28 +71,9 @@ class MultiHeadAttn(nn.Module):
         return self.norm(out + residual)
 
 
-class ScaledDotProductAttention(nn.Module):
-
-    def __init__(self, Dm, p=0.1):
-        super(ScaledDotProductAttention, self).__init__()
-
-        self.scale = Dm ** 0.5
-        self.dropout = nn.Dropout(p)
-
-    def forward(self, q, k, v, mask=None):
-        attn = torch.matmul(q, k.transpose(-1, -2)) / self.scale
-        if mask is not None:
-            attn[1 - mask] = -float('inf')
-        attn = F.softmax(attn, dim=0)
-        attn = self.dropout(attn)
-        out = torch.matmul(attn, v)
-
-        return out, attn
-
-
 class PosWiseFFN(nn.Module):
 
-    def __init__(self, Dm, Dh, p=0.1):
+    def __init__(self, Dm, Dh, p=0.2):
         super(PosWiseFFN, self).__init__()
 
         self.w1 = nn.Linear(Dm, Dh)
@@ -98,4 +86,5 @@ class PosWiseFFN(nn.Module):
         out = F.relu(self.w1(x))
         out = self.w2(out)
         out = self.dropout(out)
+
         return self.norm(out + residual)

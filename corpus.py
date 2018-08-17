@@ -114,8 +114,11 @@ class Corpus(object):
         half = window // 2
         length = len(wiseq)
         wiseq = [self.swi] * half + wiseq + [self.ewi] * half
-        return torch.tensor([wiseq[i:i + window] for i in range(length)],
-                            dtype=torch.long)
+        context = torch.tensor([wiseq[i:i + window]
+                                for i in range(length)]).long()
+        if window == 1:
+            context = context.squeeze(-1)
+        return context
 
     def __repr__(self):
         info = f"{self.__class__.__name__}(\n"

@@ -6,8 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
-                                pad_sequence)
+from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
 
 from modules import CRF, Layer
@@ -22,7 +21,7 @@ class ATTN(nn.Module):
         self.encoder = Encoder(vocdim, embdim, Dm=embdim,
                                pretrained=pretrained)
         # 输出层
-        self.decoder = nn.Linear(embdim, outdim)
+        self.out = nn.Linear(embdim, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
@@ -30,7 +29,7 @@ class ATTN(nn.Module):
 
     def forward(self, x, mask):
         x = self.encoder(x, mask)
-        return self.decoder(x)
+        return self.out(x)
 
     def fit(self, trainset, devset, file,
             epochs, batch_size, interval, eta):
@@ -144,7 +143,7 @@ class ATTN(nn.Module):
 class Encoder(nn.Module):
 
     def __init__(self, vocdim, embdim,
-                 L=6, H=5, Dk=20, Dv=20, Dm=100, Dh=200, p=0.1,
+                 L=6, H=5, Dk=20, Dv=20, Dm=100, Dh=200, p=0.2,
                  pretrained=None):
         super(Encoder, self).__init__()
 
@@ -159,6 +158,7 @@ class Encoder(nn.Module):
         self.layers = nn.ModuleList([
             Layer(H, Dm, Dh, Dk, Dv, p) for _ in range(L)
         ])
+        self.dropout = nn.Dropout(p)
 
     def init_pos(self, posdim, embdim):
         embed = torch.tensor([
@@ -171,12 +171,11 @@ class Encoder(nn.Module):
 
     def forward(self, x, mask):
         B, T = x.shape
-        pos_embed = self.init_pos(T, self.embdim)
 
         x = self.embed(x)
-        x += pos_embed[torch.arange(T)]
+        x += self.init_pos(T, self.embdim)
 
-        out = x
+        out = self.dropout(x)
         for layer in self.layers:
             out = layer(out, mask)
 
