@@ -41,13 +41,13 @@ class LSTM_CHAR(nn.Module):
                                  batch_first=True,
                                  bidirectional=False)
         # TODO: add params
-        self.encoder = Encoder(L=3, H=3, Dk=100, Dv=100, Dm=300, Dh=600)
+        self.encoder = Encoder(L=4, H=3, Dk=100, Dv=100, Dm=300, Dh=600)
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
-        self.dropout = nn.Dropout()
+        self.drop = nn.Dropout()
         self.lossfn = lossfn
 
     def forward(self, x, lens, mask, cx, clens):
@@ -61,7 +61,7 @@ class LSTM_CHAR(nn.Module):
 
         # 拼接词表示和字表示
         x = torch.cat((x, cx), dim=-1)
-        x = self.dropout(x)
+        x = self.drop(x)
         x = self.encoder(x, mask)
         return self.out(x)
 

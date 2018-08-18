@@ -42,7 +42,7 @@ class LSTM(nn.Module):
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
-        self.dropout = nn.Dropout(0.6)
+        self.drop = nn.Dropout(0.6)
         self.lossfn = lossfn
 
     def forward(self, x, lens):
@@ -54,7 +54,7 @@ class LSTM(nn.Module):
         x = pack_padded_sequence(x, lens, True)
         x, hidden = self.lstm(x)
         x, _ = pad_packed_sequence(x, True)
-        x = self.dropout(x)
+        x = self.drop(x)
 
         return self.out(x)
 

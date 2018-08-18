@@ -7,13 +7,13 @@ import torch.nn.functional as F
 
 class Encoder(nn.Module):
 
-    def __init__(self, L=6, H=5, Dk=20, Dv=20, Dm=100, Dh=200, p=0.2):
+    def __init__(self, L, H, Dk, Dv, Dm, Dh, p=0.2):
         super(Encoder, self).__init__()
 
         self.layers = nn.ModuleList([
             Layer(H, Dm, Dh, Dk, Dv, p) for _ in range(L)
         ])
-        self.dropout = nn.Dropout(p)
+        self.drop = nn.Dropout(p)
 
     def init_pos(self, T, N):
         embed = torch.tensor([
@@ -28,7 +28,7 @@ class Encoder(nn.Module):
         B, T, N = x.shape
 
         x += self.init_pos(T, N)
-        out = self.dropout(x)
+        out = self.drop(x)
 
         for layer in self.layers:
             out = layer(out, mask)
@@ -44,7 +44,7 @@ class Layer(nn.Module):
         self.attn = MultiHeadAttn(H, Dm, Dk, Dv, p)
         self.ffn = PosWiseFFN(Dm, Dh, p)
 
-    def forward(self, x, mask=None):
+    def forward(self, x, mask):
         out = self.attn(x, x, x, mask)
         out = self.ffn(out)
         return out
@@ -58,6 +58,7 @@ class MultiHeadAttn(nn.Module):
         self.H = H
         self.Dk = Dk
         self.Dv = Dv
+        self.scale = Dk ** 0.5
 
         self.wq = nn.Parameter(nn.init.xavier_normal_(torch.empty(H, Dm, Dk)))
         self.wk = nn.Parameter(nn.init.xavier_normal_(torch.empty(H, Dm, Dk)))
@@ -66,41 +67,30 @@ class MultiHeadAttn(nn.Module):
         self.norm = nn.LayerNorm(Dm)
         self.proj = nn.Linear(H * Dv, Dm)
 
-        self.dropout = nn.Dropout(p)
+        self.drop = nn.Dropout(p)
 
-    def forward(self, q, k, v, mask=None):
+    def forward(self, q, k, v, mask):
         residual = q
         B, Tq, Dm = q.shape
         B, Tk, Dm = k.shape
         B, Tv, Dm = v.shape
         H, Dk, Dv = self.H, self.Dk, self.Dv
 
-        q = q.repeat(H, 1, 1).view(H, -1, Dm)
-        k = k.repeat(H, 1, 1).view(H, -1, Dm)
-        v = v.repeat(H, 1, 1).view(H, -1, Dm)
-        # [H * B, Tq, Dk]
-        q = torch.bmm(q, self.wq).view(-1, Tq, Dk)
-        # [H * B, Tk, Dk]
-        k = torch.bmm(k, self.wk).view(-1, Tk, Dk)
-        # [H * B, Tv, Dv]
-        v = torch.bmm(v, self.wv).view(-1, Tv, Dv)
+        q = (q @ self.wq.unsqueeze(1)).view(-1, Tq, Dk)  # [H * B, Tq, Dk]
+        k = (k @ self.wk.unsqueeze(1)).view(-1, Tk, Dk)  # [H * B, Tk, Dk]
+        v = (v @ self.wv.unsqueeze(1)).view(-1, Tv, Dv)  # [H * B, Tv, Dv]
 
         # Scaled Dot-Product Attention
-        attn = torch.bmm(q, k.transpose(1, 2)) / Dm ** 0.5
-        if mask is not None:
-            mask = mask.repeat(H, 1).unsqueeze(1)
-            attn.masked_fill_(1 - mask, -float('inf'))
-        # [H * B, Tq, Tk]
+        mask = mask.repeat(H, 1).unsqueeze(1)  # [H * B, 1, Tk]
+        attn = (q @ k.transpose(1, 2)) / self.scale  # [H * B, Tq, Tk]
+        attn = attn.masked_fill(1 - mask, -float('inf'))
         attn = F.softmax(attn, dim=-1)
-        attn = self.dropout(attn)
-        # [H * B, Tq, Dv]
-        out = torch.matmul(attn, v)
+        attn = self.drop(attn)
 
-        # [B, Tq, H * Dv]
-        out = torch.cat(torch.split(out, B, dim=0), dim=-1)
-
+        out = attn @ v  # [H * B, Tq, Dv]
+        out = torch.cat(torch.split(out, B, dim=0), dim=-1)  # [B, Tq, H * Dv]
         out = self.proj(out)
-        out = self.dropout(out)
+        out = self.drop(out)
 
         return self.norm(out + residual)
 
@@ -113,12 +103,12 @@ class PosWiseFFN(nn.Module):
         self.w1 = nn.Linear(Dm, Dh)
         self.w2 = nn.Linear(Dh, Dm)
         self.norm = nn.LayerNorm(Dm)
-        self.dropout = nn.Dropout(p)
+        self.drop = nn.Dropout(p)
 
     def forward(self, x):
         residual = x
         out = F.relu(self.w1(x))
         out = self.w2(out)
-        out = self.dropout(out)
+        out = self.drop(out)
 
         return self.norm(out + residual)

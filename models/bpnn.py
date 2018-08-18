@@ -30,7 +30,7 @@ class BPNN(nn.Module):
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
-        self.dropout = nn.Dropout()
+        self.drop = nn.Dropout()
         self.lossfn = lossfn
 
     def forward(self, x):
@@ -40,7 +40,7 @@ class BPNN(nn.Module):
         # 拼接上下文
         x = x.view(L, -1)
 
-        x = self.dropout(F.relu(self.hid(x)))
+        x = self.drop(F.relu(self.hid(x)))
 
         return self.out(x)
 
