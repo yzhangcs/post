@@ -9,7 +9,7 @@ import torch.optim as optim
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
 
-from modules import CRF, Layer
+from modules import CRF, Encoder
 
 
 class ATTN(nn.Module):
@@ -18,8 +18,12 @@ class ATTN(nn.Module):
                  lossfn, use_crf=False, pretrained=None):
         super(ATTN, self).__init__()
 
-        self.encoder = Encoder(vocdim, embdim, Dm=embdim,
-                               pretrained=pretrained)
+        if pretrained is None:
+            self.embed = nn.Embedding(vocdim, embdim)
+        else:
+            self.embed = nn.Embedding.from_pretrained(pretrained, False)
+        # TODO: add params
+        self.encoder = Encoder(L=6, H=5, Dk=20, Dv=20, Dm=100, Dh=200)
         # 输出层
         self.out = nn.Linear(embdim, outdim)
         # CRF层
@@ -28,6 +32,7 @@ class ATTN(nn.Module):
         self.lossfn = lossfn
 
     def forward(self, x, mask):
+        x = self.embed(x)
         x = self.encoder(x, mask)
         return self.out(x)
 
@@ -138,45 +143,3 @@ class ATTN(nn.Module):
         y = torch.stack(y)[:, :max_len]
 
         return x, lens, y
-
-
-class Encoder(nn.Module):
-
-    def __init__(self, vocdim, embdim,
-                 L=6, H=5, Dk=20, Dv=20, Dm=100, Dh=200, p=0.2,
-                 pretrained=None):
-        super(Encoder, self).__init__()
-
-        self.Dm = Dm
-        self.embdim = embdim
-
-        if pretrained is None:
-            self.embed = nn.Embedding(vocdim, embdim)
-        else:
-            self.embed = nn.Embedding.from_pretrained(pretrained, False)
-
-        self.layers = nn.ModuleList([
-            Layer(H, Dm, Dh, Dk, Dv, p) for _ in range(L)
-        ])
-        self.dropout = nn.Dropout(p)
-
-    def init_pos(self, posdim, embdim):
-        embed = torch.tensor([
-            [pos / 10000 ** (i // 2 * 2 / embdim)
-             for i in range(embdim)] for pos in range(posdim)
-        ])
-        embed[:, 0::2] = torch.sin(embed[:, 0::2])
-        embed[:, 1::2] = torch.cos(embed[:, 1::2])
-        return embed
-
-    def forward(self, x, mask):
-        B, T = x.shape
-
-        x = self.embed(x)
-        x += self.init_pos(T, self.embdim)
-
-        out = self.dropout(x)
-        for layer in self.layers:
-            out = layer(out, mask)
-
-        return out

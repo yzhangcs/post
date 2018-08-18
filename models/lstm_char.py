@@ -10,7 +10,7 @@ from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
                                 pad_sequence)
 from torch.utils.data import DataLoader
 
-from modules import CRF, CharLSTM, Layer
+from modules import CRF, CharLSTM, Encoder, CharATTN
 
 
 class LSTM_CHAR(nn.Module):
@@ -28,6 +28,7 @@ class LSTM_CHAR(nn.Module):
 
         self.clstm = CharLSTM(chrdim, embdim, char_embdim,
                               bidirectional=bidirectional)
+        self.cattn = CharATTN(chrdim, 2 * embdim)
         # 词嵌入LSTM层
         if bidirectional:
             self.wlstm = nn.LSTM(input_size=embdim + char_embdim * 2,
@@ -39,15 +40,14 @@ class LSTM_CHAR(nn.Module):
                                  hidden_size=hiddim,
                                  batch_first=True,
                                  bidirectional=False)
-        # Attention层
-        self.attn = Layer(3, hiddim, hiddim, hiddim,
-                          hiddim) if use_attn else None
+        # TODO: add params
+        self.encoder = Encoder(L=3, H=3, Dk=100, Dv=100, Dm=300, Dh=600)
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
-        self.dropout = nn.Dropout(0.6)
+        self.dropout = nn.Dropout()
         self.lossfn = lossfn
 
     def forward(self, x, lens, mask, cx, clens):
@@ -62,14 +62,7 @@ class LSTM_CHAR(nn.Module):
         # 拼接词表示和字表示
         x = torch.cat((x, cx), dim=-1)
         x = self.dropout(x)
-        # 打包数据
-        x = pack_padded_sequence(x, lens, True)
-        x, hidden = self.wlstm(x)
-        x, _ = pad_packed_sequence(x, True)
-        if self.attn is not None:
-            x = self.attn(x, mask)
-        x = self.dropout(x)
-
+        x = self.encoder(x, mask)
         return self.out(x)
 
     def fit(self, trainset, devset, file,
