@@ -22,6 +22,7 @@ class Encoder(nn.Module):
         ])
         embed[:, 0::2] = torch.sin(embed[:, 0::2])
         embed[:, 1::2] = torch.cos(embed[:, 1::2])
+
         return embed
 
     def forward(self, x, mask):
@@ -47,6 +48,7 @@ class Layer(nn.Module):
     def forward(self, x, mask):
         out = self.attn(x, x, x, mask)
         out = self.ffn(out)
+
         return out
 
 
@@ -64,9 +66,8 @@ class MultiHeadAttn(nn.Module):
         self.wk = nn.Parameter(nn.init.xavier_normal_(torch.empty(H, Dm, Dk)))
         self.wv = nn.Parameter(nn.init.xavier_normal_(torch.empty(H, Dm, Dv)))
 
-        self.norm = nn.LayerNorm(Dm)
         self.proj = nn.Linear(H * Dv, Dm)
-
+        self.norm = nn.LayerNorm(Dm)
         self.drop = nn.Dropout(p)
 
     def forward(self, q, k, v, mask):
@@ -89,7 +90,7 @@ class MultiHeadAttn(nn.Module):
 
         out = attn @ v  # [H * B, Tq, Dv]
         out = torch.cat(torch.split(out, B, dim=0), dim=-1)  # [B, Tq, H * Dv]
-        out = self.proj(out)
+        out = self.proj(out)  # [B, Tq, Dm]
         out = self.drop(out)
 
         return self.norm(out + residual)

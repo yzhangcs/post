@@ -40,7 +40,8 @@ class BPNN(nn.Module):
         # 拼接上下文
         x = x.view(L, -1)
 
-        x = self.drop(F.relu(self.hid(x)))
+        x = F.relu(self.hid(x))
+        x = self.drop(x)
 
         return self.out(x)
 

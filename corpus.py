@@ -77,7 +77,7 @@ class Corpus(object):
         return extended_embed
 
     def load(self, fdata, charwise=False, window=1, max_len=10):
-        x, lens, cx, clens, y = [], [], [], [], []
+        x, lens, char_x, char_lens, y = [], [], [], [], []
         # 句子按照长度从大到小有序
         sentences = sorted(self.preprocess(fdata),
                            key=lambda x: len(x[0]),
@@ -89,23 +89,24 @@ class Corpus(object):
             x.append(self.get_context(wiseq, window))
             lens.append(len(tiseq))
             # 不足最大长度的部分用0填充
-            cx.append(torch.tensor([
+            char_x.append(torch.tensor([
                 [self.cdict.get(c, self.uci)
                  for c in w[:max_len]] + [0] * (max_len - len(w))
                 for w in wordseq
             ]))
-            clens.append(torch.tensor([min(len(w), max_len) for w in wordseq],
-                                      dtype=torch.long))
+            char_lens.append(torch.tensor([min(len(w), max_len)
+                                           for w in wordseq],
+                                          dtype=torch.long))
             y.append(torch.tensor([ti for ti in tiseq], dtype=torch.long))
 
         x = pad_sequence(x, True)
         lens = torch.tensor(lens)
-        cx = pad_sequence(cx, True)
-        clens = pad_sequence(clens, True)
+        char_x = pad_sequence(char_x, True)
+        char_lens = pad_sequence(char_lens, True)
         y = pad_sequence(y, True, padding_value=-1)
 
         if charwise:
-            dataset = TensorDataset(x, lens, cx, clens, y)
+            dataset = TensorDataset(x, lens, char_x, char_lens, y)
         else:
             dataset = TensorDataset(x, lens, y)
         return dataset

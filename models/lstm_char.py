@@ -10,7 +10,7 @@ from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
                                 pad_sequence)
 from torch.utils.data import DataLoader
 
-from modules import CRF, CharLSTM, Encoder, CharATTN
+from modules import CRF, CharLSTM, Encoder
 
 
 class LSTM_CHAR(nn.Module):
@@ -26,9 +26,10 @@ class LSTM_CHAR(nn.Module):
         else:
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
 
-        self.clstm = CharLSTM(chrdim, embdim, char_embdim,
+        self.clstm = CharLSTM(chrdim=chrdim,
+                              embdim=embdim,
+                              hiddim=char_embdim,
                               bidirectional=bidirectional)
-        self.cattn = CharATTN(chrdim, 2 * embdim)
         # 词嵌入LSTM层
         if bidirectional:
             self.wlstm = nn.LSTM(input_size=embdim + char_embdim * 2,
@@ -40,8 +41,6 @@ class LSTM_CHAR(nn.Module):
                                  hidden_size=hiddim,
                                  batch_first=True,
                                  bidirectional=False)
-        # TODO: add params
-        self.encoder = Encoder(L=4, H=3, Dk=100, Dv=100, Dm=300, Dh=600)
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
@@ -50,19 +49,26 @@ class LSTM_CHAR(nn.Module):
         self.drop = nn.Dropout()
         self.lossfn = lossfn
 
-    def forward(self, x, lens, mask, cx, clens):
+    def forward(self, x, lens, char_x, char_lens):
         B, T = x.shape
         # 获取词嵌入向量
         x = self.embed(x)
 
+        mask = torch.arange(T) < lens.unsqueeze(-1)
+
         # 获取字嵌入向量
-        cx = self.clstm(cx[mask], clens[mask])
-        cx = pad_sequence(torch.split(cx, lens.tolist()), True)
+        char_x = self.clstm(char_x[mask], char_lens[mask])
+        char_x = pad_sequence(torch.split(char_x, lens.tolist()), True)
 
         # 拼接词表示和字表示
-        x = torch.cat((x, cx), dim=-1)
+        x = torch.cat((x, char_x), dim=-1)
         x = self.drop(x)
-        x = self.encoder(x, mask)
+        # 打包数据
+        x = pack_padded_sequence(x, lens, True)
+        x, hidden = self.wlstm(x)
+        x, _ = pad_packed_sequence(x, True)
+        x = self.drop(x)
+
         return self.out(x)
 
     def fit(self, trainset, devset, file,
@@ -112,12 +118,12 @@ class LSTM_CHAR(nn.Module):
         # 清除梯度
         self.optimizer.zero_grad()
 
-        x, lens, cx, clens, y = batch
+        x, lens, char_x, char_lens, y = batch
         # 获取掩码
         mask = y.ge(0)
         y = y[mask]
 
-        out = self(x, lens, mask, cx, clens)
+        out = self(x, lens, char_x, char_lens)
         if self.crf is None:
             out = out[mask]
             loss = self.lossfn(out, y)
@@ -138,12 +144,12 @@ class LSTM_CHAR(nn.Module):
 
         loss, tp, total = 0, 0, 0
         loader = DataLoader(dataset, batch_size, collate_fn=self.collate_fn)
-        for x, lens, cx, clens, y in loader:
+        for x, lens, char_x, char_lens, y in loader:
             # 获取掩码
             mask = y.ge(0)
             y = y[mask]
 
-            out = self.forward(x, lens, mask, cx, clens)
+            out = self.forward(x, lens, char_x, char_lens)
             if self.crf is None:
                 out = out[mask]
                 predict = torch.argmax(out, dim=1)
@@ -163,14 +169,14 @@ class LSTM_CHAR(nn.Module):
     def collate_fn(self, data):
         # 按照长度调整顺序
         data.sort(key=lambda x: x[1], reverse=True)
-        x, lens, cx, clens, y = zip(*data)
+        x, lens, char_x, char_lens, y = zip(*data)
         # 获取句子的最大长度
         max_len = lens[0]
         # 去除无用的填充数据
         x = torch.stack(x)[:, :max_len]
         lens = torch.tensor(lens)
-        cx = torch.stack(cx)[:, :max_len]
-        clens = torch.stack(clens)[:, :max_len]
+        char_x = torch.stack(char_x)[:, :max_len]
+        char_lens = torch.stack(char_lens)[:, :max_len]
         y = torch.stack(y)[:, :max_len]
 
-        return x, lens, cx, clens, y
+        return x, lens, char_x, char_lens, y

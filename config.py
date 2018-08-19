@@ -3,7 +3,7 @@
 
 class Config(object):
 
-    def __init__(self, bpnn):
+    def __init__(self, bpnn=False):
         self.window = 5 if bpnn else 1
         self.embdim = 100
         self.char_embdim = 100
@@ -15,5 +15,5 @@ class Config(object):
         self.ftrain = 'data/ctb5/train.conll'
         self.fdev = 'data/ctb5/dev.conll'
         self.ftest = 'data/ctb5/test.conll'
-        self.embed = 'data/giga.100.txt'
+        self.embed = 'data/embed.txt'
         self.netpt = 'network.pt'

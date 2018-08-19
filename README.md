@@ -11,7 +11,6 @@ Already implemented models:
 TODO:
 
 * implement self-attention
-* avoid limitations of git-lfs(to download the big pretrained file)
 
 ## Requirements
 
