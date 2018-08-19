@@ -94,7 +94,6 @@ LSTM(
 ## References
 
 * https://github.com/LiyuanLucasLiu/LM-LSTM-CRF
-* https://github.com/threelittlemonkeys/lstm-crf-pytorch
 * https://github.com/kmkurn/pytorch-crf
 * https://github.com/jadore801120/attention-is-all-you-need-pytorch
 * https://arxiv.org/pdf/1706.03762.pdf

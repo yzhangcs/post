@@ -25,22 +25,25 @@ class LSTM_CHAR(nn.Module):
             self.embed = nn.Embedding(vocdim, embdim)
         else:
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
-
+        # 字嵌入LSTM层
         self.clstm = CharLSTM(chrdim=chrdim,
                               embdim=embdim,
                               hiddim=char_embdim,
                               bidirectional=bidirectional)
+
         # 词嵌入LSTM层
-        if bidirectional:
-            self.wlstm = nn.LSTM(input_size=embdim + char_embdim * 2,
-                                 hidden_size=hiddim // 2,
-                                 batch_first=True,
-                                 bidirectional=True)
-        else:
-            self.wlstm = nn.LSTM(input_size=embdim + char_embdim,
-                                 hidden_size=hiddim,
-                                 batch_first=True,
-                                 bidirectional=False)
+        hidden_size = hiddim // 2 if bidirectional else hiddim
+        self.wlstm = nn.LSTM(input_size=embdim + char_embdim,
+                             hidden_size=hidden_size,
+                             batch_first=True,
+                             bidirectional=bidirectional)
+        self.encoder = Encoder(L=3,
+                               H=5,
+                               Dk=hiddim // 5,
+                               Dv=hiddim // 5,
+                               Dm=hiddim,
+                               Dh=hiddim * 2) if use_attn else None
+
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
@@ -67,6 +70,8 @@ class LSTM_CHAR(nn.Module):
         x = pack_padded_sequence(x, lens, True)
         x, hidden = self.wlstm(x)
         x, _ = pad_packed_sequence(x, True)
+        if self.encoder is not None:
+            x = self.encoder(x, mask)
         x = self.drop(x)
 
         return self.out(x)

@@ -13,7 +13,9 @@ class CharLSTM(nn.Module):
         # 字嵌入
         self.embed = nn.Embedding(chrdim, embdim)
         # 字嵌入LSTM层
-        self.lstm = nn.LSTM(embdim, hiddim,
+        hidden_size = hiddim // 2 if bidirectional else hiddim
+        self.lstm = nn.LSTM(input_size=embdim,
+                            hidden_size=hidden_size,
                             batch_first=True,
                             bidirectional=bidirectional)
 
