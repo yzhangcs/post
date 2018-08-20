@@ -1,4 +1,3 @@
-nohup: 忽略输入
 Set max num of threads to 4
 Preprocess the data
 Corpus(
@@ -14,33 +13,98 @@ Load the dataset
   size of testset: 1910
 
 Create Neural Network
-  window: 1
   vocdim: 383647
-  chrdim: 7477
   embdim: 100
-  char_embdim: 100
-  hiddim: 300
   outdim: 32
   lossfn: cross_entropy
 
-LSTM(
+ATTN(
   (embed): Embedding(383647, 100)
-  (clstm): CharLSTM(
-    (embed): Embedding(7477, 100)
-    (lstm): LSTM(100, 100, batch_first=True, bidirectional=True)
-  )
-  (wlstm): LSTM(300, 150, batch_first=True, bidirectional=True)
-  (attn): Attention(
-    (attention): ScaledDotProductAttention(
-      (dropout): Dropout(p=0.1)
+  (encoder): Encoder(
+    (layers): ModuleList(
+      (0): Layer(
+        (attn): MultiHeadAttn(
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (proj): Linear(in_features=100, out_features=100, bias=True)
+          (dropout): Dropout(p=0.2)
+        )
+        (ffn): PosWiseFFN(
+          (w1): Linear(in_features=100, out_features=200, bias=True)
+          (w2): Linear(in_features=200, out_features=100, bias=True)
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (dropout): Dropout(p=0.2)
+        )
+      )
+      (1): Layer(
+        (attn): MultiHeadAttn(
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (proj): Linear(in_features=100, out_features=100, bias=True)
+          (dropout): Dropout(p=0.2)
+        )
+        (ffn): PosWiseFFN(
+          (w1): Linear(in_features=100, out_features=200, bias=True)
+          (w2): Linear(in_features=200, out_features=100, bias=True)
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (dropout): Dropout(p=0.2)
+        )
+      )
+      (2): Layer(
+        (attn): MultiHeadAttn(
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (proj): Linear(in_features=100, out_features=100, bias=True)
+          (dropout): Dropout(p=0.2)
+        )
+        (ffn): PosWiseFFN(
+          (w1): Linear(in_features=100, out_features=200, bias=True)
+          (w2): Linear(in_features=200, out_features=100, bias=True)
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (dropout): Dropout(p=0.2)
+        )
+      )
+      (3): Layer(
+        (attn): MultiHeadAttn(
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (proj): Linear(in_features=100, out_features=100, bias=True)
+          (dropout): Dropout(p=0.2)
+        )
+        (ffn): PosWiseFFN(
+          (w1): Linear(in_features=100, out_features=200, bias=True)
+          (w2): Linear(in_features=200, out_features=100, bias=True)
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (dropout): Dropout(p=0.2)
+        )
+      )
+      (4): Layer(
+        (attn): MultiHeadAttn(
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (proj): Linear(in_features=100, out_features=100, bias=True)
+          (dropout): Dropout(p=0.2)
+        )
+        (ffn): PosWiseFFN(
+          (w1): Linear(in_features=100, out_features=200, bias=True)
+          (w2): Linear(in_features=200, out_features=100, bias=True)
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (dropout): Dropout(p=0.2)
+        )
+      )
+      (5): Layer(
+        (attn): MultiHeadAttn(
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (proj): Linear(in_features=100, out_features=100, bias=True)
+          (dropout): Dropout(p=0.2)
+        )
+        (ffn): PosWiseFFN(
+          (w1): Linear(in_features=100, out_features=200, bias=True)
+          (w2): Linear(in_features=200, out_features=100, bias=True)
+          (norm): LayerNorm(torch.Size([100]), eps=1e-05, elementwise_affine=True)
+          (dropout): Dropout(p=0.2)
+        )
+      )
     )
-    (layer_norm): LayerNorm(torch.Size([300]), eps=1e-05, elementwise_affine=True)
-    (proj): Linear(in_features=900, out_features=300, bias=True)
-    (dropout): Dropout(p=0.1)
+    (dropout): Dropout(p=0.2)
   )
-  (out): Linear(in_features=300, out_features=32, bias=True)
+  (out): Linear(in_features=100, out_features=32, bias=True)
   (crf): CRF()
-  (dropout): Dropout(p=0.6)
 )
 
 Use Adam optimizer to train the network
@@ -50,168 +114,148 @@ Use Adam optimizer to train the network
   eta: 0.001
 
 Epoch: 1 / 100:
-train: Loss: 6.6156 Accuracy: 400921 / 437991 = 91.54%
-dev:   Loss: 6.2755 Accuracy: 18656 / 20454 = 91.21%
-0:06:28.625246s elapsed
+train: Loss: 9.9134 Accuracy: 382872 / 437991 = 87.42%
+dev:   Loss: 9.3455 Accuracy: 17810 / 20454 = 87.07%
+0:06:50.025059s elapsed
 
 Epoch: 2 / 100:
-train: Loss: 4.8672 Accuracy: 410069 / 437991 = 93.62%
-dev:   Loss: 5.1372 Accuracy: 18931 / 20454 = 92.55%
-0:06:42.180021s elapsed
+train: Loss: 7.3562 Accuracy: 393990 / 437991 = 89.95%
+dev:   Loss: 7.4858 Accuracy: 18208 / 20454 = 89.02%
+0:06:35.597562s elapsed
 
 Epoch: 3 / 100:
-train: Loss: 3.9444 Accuracy: 415357 / 437991 = 94.83%
-dev:   Loss: 4.5526 Accuracy: 19093 / 20454 = 93.35%
-0:06:49.787153s elapsed
+train: Loss: 6.0577 Accuracy: 401055 / 437991 = 91.57%
+dev:   Loss: 6.5355 Accuracy: 18434 / 20454 = 90.12%
+0:06:13.338722s elapsed
 
 Epoch: 4 / 100:
-train: Loss: 3.4031 Accuracy: 418471 / 437991 = 95.54%
-dev:   Loss: 4.3362 Accuracy: 19206 / 20454 = 93.90%
-0:08:02.063652s elapsed
+train: Loss: 5.1794 Accuracy: 406089 / 437991 = 92.72%
+dev:   Loss: 5.9410 Accuracy: 18570 / 20454 = 90.79%
+0:06:09.922375s elapsed
 
 Epoch: 5 / 100:
-train: Loss: 3.0387 Accuracy: 420257 / 437991 = 95.95%
-dev:   Loss: 4.1504 Accuracy: 19256 / 20454 = 94.14%
-0:08:11.856266s elapsed
+train: Loss: 4.5065 Accuracy: 410261 / 437991 = 93.67%
+dev:   Loss: 5.8254 Accuracy: 18650 / 20454 = 91.18%
+0:06:09.909712s elapsed
 
 Epoch: 6 / 100:
-train: Loss: 2.7336 Accuracy: 421975 / 437991 = 96.34%
-dev:   Loss: 3.9724 Accuracy: 19367 / 20454 = 94.69%
-0:07:30.506755s elapsed
+train: Loss: 4.0732 Accuracy: 413010 / 437991 = 94.30%
+dev:   Loss: 5.6558 Accuracy: 18742 / 20454 = 91.63%
+0:06:10.634591s elapsed
 
 Epoch: 7 / 100:
-train: Loss: 2.4249 Accuracy: 424113 / 437991 = 96.83%
-dev:   Loss: 3.9197 Accuracy: 19383 / 20454 = 94.76%
-0:06:45.026709s elapsed
+train: Loss: 3.7947 Accuracy: 414632 / 437991 = 94.67%
+dev:   Loss: 5.3695 Accuracy: 18792 / 20454 = 91.87%
+0:06:08.398613s elapsed
 
 Epoch: 8 / 100:
-train: Loss: 2.2298 Accuracy: 425229 / 437991 = 97.09%
-dev:   Loss: 3.9409 Accuracy: 19401 / 20454 = 94.85%
-0:06:48.562380s elapsed
+train: Loss: 3.4394 Accuracy: 416848 / 437991 = 95.17%
+dev:   Loss: 5.2896 Accuracy: 18864 / 20454 = 92.23%
+0:06:11.790916s elapsed
 
 Epoch: 9 / 100:
-train: Loss: 2.0285 Accuracy: 426422 / 437991 = 97.36%
-dev:   Loss: 3.8115 Accuracy: 19441 / 20454 = 95.05%
-0:06:35.121996s elapsed
+train: Loss: 3.1637 Accuracy: 418532 / 437991 = 95.56%
+dev:   Loss: 5.5886 Accuracy: 18835 / 20454 = 92.08%
+0:06:08.903005s elapsed
 
 Epoch: 10 / 100:
-train: Loss: 1.9403 Accuracy: 426932 / 437991 = 97.48%
-dev:   Loss: 3.7063 Accuracy: 19435 / 20454 = 95.02%
-0:06:35.097174s elapsed
+train: Loss: 3.0134 Accuracy: 419320 / 437991 = 95.74%
+dev:   Loss: 5.2235 Accuracy: 18884 / 20454 = 92.32%
+0:06:13.096251s elapsed
 
 Epoch: 11 / 100:
-train: Loss: 1.7743 Accuracy: 427872 / 437991 = 97.69%
-dev:   Loss: 3.8594 Accuracy: 19485 / 20454 = 95.26%
-0:06:33.998279s elapsed
+train: Loss: 2.7891 Accuracy: 420867 / 437991 = 96.09%
+dev:   Loss: 5.2863 Accuracy: 18907 / 20454 = 92.44%
+0:06:10.457325s elapsed
 
 Epoch: 12 / 100:
-train: Loss: 1.6368 Accuracy: 428558 / 437991 = 97.85%
-dev:   Loss: 3.7483 Accuracy: 19523 / 20454 = 95.45%
-0:06:33.553042s elapsed
+train: Loss: 2.5760 Accuracy: 422185 / 437991 = 96.39%
+dev:   Loss: 5.1853 Accuracy: 18927 / 20454 = 92.53%
+0:06:07.850844s elapsed
 
 Epoch: 13 / 100:
-train: Loss: 1.5413 Accuracy: 429356 / 437991 = 98.03%
-dev:   Loss: 3.8532 Accuracy: 19484 / 20454 = 95.26%
-0:06:35.339229s elapsed
+train: Loss: 2.3364 Accuracy: 423753 / 437991 = 96.75%
+dev:   Loss: 5.5296 Accuracy: 18908 / 20454 = 92.44%
+0:06:17.140743s elapsed
 
 Epoch: 14 / 100:
-train: Loss: 1.4201 Accuracy: 430142 / 437991 = 98.21%
-dev:   Loss: 3.9213 Accuracy: 19473 / 20454 = 95.20%
-0:07:10.579424s elapsed
+train: Loss: 2.2782 Accuracy: 424360 / 437991 = 96.89%
+dev:   Loss: 5.7469 Accuracy: 18871 / 20454 = 92.26%
+0:06:00.986732s elapsed
 
 Epoch: 15 / 100:
-train: Loss: 1.3791 Accuracy: 430249 / 437991 = 98.23%
-dev:   Loss: 3.7506 Accuracy: 19485 / 20454 = 95.26%
-0:07:09.395215s elapsed
+train: Loss: 2.0744 Accuracy: 425705 / 437991 = 97.19%
+dev:   Loss: 5.6540 Accuracy: 18894 / 20454 = 92.37%
+0:06:07.918765s elapsed
 
 Epoch: 16 / 100:
-train: Loss: 1.2376 Accuracy: 431097 / 437991 = 98.43%
-dev:   Loss: 4.0730 Accuracy: 19509 / 20454 = 95.38%
-0:07:07.792372s elapsed
+train: Loss: 2.0128 Accuracy: 426096 / 437991 = 97.28%
+dev:   Loss: 5.4979 Accuracy: 18925 / 20454 = 92.52%
+0:06:09.252782s elapsed
 
 Epoch: 17 / 100:
-train: Loss: 1.1659 Accuracy: 431549 / 437991 = 98.53%
-dev:   Loss: 4.1070 Accuracy: 19511 / 20454 = 95.39%
-0:06:45.183743s elapsed
+train: Loss: 1.8049 Accuracy: 427429 / 437991 = 97.59%
+dev:   Loss: 5.7040 Accuracy: 18982 / 20454 = 92.80%
+0:06:08.741698s elapsed
 
 Epoch: 18 / 100:
-train: Loss: 1.0988 Accuracy: 431854 / 437991 = 98.60%
-dev:   Loss: 4.0340 Accuracy: 19511 / 20454 = 95.39%
-0:06:40.223969s elapsed
+train: Loss: 1.7163 Accuracy: 427855 / 437991 = 97.69%
+dev:   Loss: 5.9604 Accuracy: 18972 / 20454 = 92.75%
+0:06:08.322761s elapsed
 
 Epoch: 19 / 100:
-train: Loss: 1.0323 Accuracy: 432206 / 437991 = 98.68%
-dev:   Loss: 3.9915 Accuracy: 19499 / 20454 = 95.33%
-0:06:46.218076s elapsed
+train: Loss: 1.5954 Accuracy: 428790 / 437991 = 97.90%
+dev:   Loss: 5.9091 Accuracy: 18953 / 20454 = 92.66%
+0:06:04.951275s elapsed
 
 Epoch: 20 / 100:
-train: Loss: 0.9637 Accuracy: 432739 / 437991 = 98.80%
-dev:   Loss: 3.9327 Accuracy: 19538 / 20454 = 95.52%
-0:07:02.711123s elapsed
+train: Loss: 1.5143 Accuracy: 429421 / 437991 = 98.04%
+dev:   Loss: 5.9731 Accuracy: 18929 / 20454 = 92.54%
+0:06:08.748601s elapsed
 
 Epoch: 21 / 100:
-train: Loss: 0.9111 Accuracy: 433031 / 437991 = 98.87%
-dev:   Loss: 4.0349 Accuracy: 19541 / 20454 = 95.54%
-0:07:12.860158s elapsed
+train: Loss: 1.3826 Accuracy: 430175 / 437991 = 98.22%
+dev:   Loss: 6.1174 Accuracy: 18902 / 20454 = 92.41%
+0:06:08.612569s elapsed
 
 Epoch: 22 / 100:
-train: Loss: 0.8823 Accuracy: 433092 / 437991 = 98.88%
-dev:   Loss: 4.1093 Accuracy: 19519 / 20454 = 95.43%
-0:07:00.548523s elapsed
+train: Loss: 1.3689 Accuracy: 430079 / 437991 = 98.19%
+dev:   Loss: 6.1094 Accuracy: 18956 / 20454 = 92.68%
+0:06:06.216233s elapsed
 
 Epoch: 23 / 100:
-train: Loss: 0.8227 Accuracy: 433453 / 437991 = 98.96%
-dev:   Loss: 4.2169 Accuracy: 19524 / 20454 = 95.45%
-0:06:40.084941s elapsed
+train: Loss: 1.2410 Accuracy: 430918 / 437991 = 98.39%
+dev:   Loss: 6.2564 Accuracy: 18886 / 20454 = 92.33%
+0:06:10.083614s elapsed
 
 Epoch: 24 / 100:
-train: Loss: 0.7933 Accuracy: 433683 / 437991 = 99.02%
-dev:   Loss: 4.3082 Accuracy: 19489 / 20454 = 95.28%
-0:06:37.957903s elapsed
+train: Loss: 1.1690 Accuracy: 431496 / 437991 = 98.52%
+dev:   Loss: 6.2145 Accuracy: 18954 / 20454 = 92.67%
+0:06:09.329006s elapsed
 
 Epoch: 25 / 100:
-train: Loss: 0.7420 Accuracy: 433940 / 437991 = 99.08%
-dev:   Loss: 4.3850 Accuracy: 19512 / 20454 = 95.39%
-0:06:44.169014s elapsed
+train: Loss: 1.0895 Accuracy: 431936 / 437991 = 98.62%
+dev:   Loss: 6.4621 Accuracy: 18931 / 20454 = 92.55%
+0:06:05.549236s elapsed
 
 Epoch: 26 / 100:
-train: Loss: 0.6989 Accuracy: 434126 / 437991 = 99.12%
-dev:   Loss: 4.4275 Accuracy: 19505 / 20454 = 95.36%
-0:06:56.573800s elapsed
+train: Loss: 1.0097 Accuracy: 432459 / 437991 = 98.74%
+dev:   Loss: 6.3352 Accuracy: 18969 / 20454 = 92.74%
+0:06:08.668147s elapsed
 
 Epoch: 27 / 100:
-train: Loss: 0.6765 Accuracy: 434264 / 437991 = 99.15%
-dev:   Loss: 4.1883 Accuracy: 19514 / 20454 = 95.40%
-0:06:41.504793s elapsed
+train: Loss: 0.8850 Accuracy: 433309 / 437991 = 98.93%
+dev:   Loss: 6.2220 Accuracy: 18934 / 20454 = 92.57%
+0:06:14.086351s elapsed
 
 Epoch: 28 / 100:
-train: Loss: 0.6290 Accuracy: 434593 / 437991 = 99.22%
-dev:   Loss: 4.5052 Accuracy: 19479 / 20454 = 95.23%
-0:06:35.474043s elapsed
+train: Loss: 0.8935 Accuracy: 433238 / 437991 = 98.91%
+dev:   Loss: 6.5941 Accuracy: 18891 / 20454 = 92.36%
+0:06:07.805856s elapsed
 
-Epoch: 29 / 100:
-train: Loss: 0.6435 Accuracy: 434305 / 437991 = 99.16%
-dev:   Loss: 4.6799 Accuracy: 19504 / 20454 = 95.36%
-0:06:43.344671s elapsed
+max accuracy of dev is 92.80% at epoch 17
+mean time of each epoch is 0:06:11.654977s
 
-Epoch: 30 / 100:
-train: Loss: 0.5660 Accuracy: 434870 / 437991 = 99.29%
-dev:   Loss: 4.5512 Accuracy: 19520 / 20454 = 95.43%
-0:06:43.517917s elapsed
-
-Epoch: 31 / 100:
-train: Loss: 0.5902 Accuracy: 434683 / 437991 = 99.24%
-dev:   Loss: 4.5765 Accuracy: 19502 / 20454 = 95.35%
-0:06:34.663860s elapsed
-
-Epoch: 32 / 100:
-train: Loss: 0.5272 Accuracy: 435131 / 437991 = 99.35%
-dev:   Loss: 4.3384 Accuracy: 19519 / 20454 = 95.43%
-0:06:44.517969s elapsed
-
-max accuracy of dev is 95.54% at epoch 21
-mean time of each epoch is 0:06:52.782482s
-
-test:  Loss: 3.8926 Accuracy: 47986 / 50319 = 95.36%
-3:40:19.626939s elapsed
+test:  Loss: 6.1715 Accuracy: 46475 / 50319 = 92.36%
+2:53:35.796825s elapsed
 
