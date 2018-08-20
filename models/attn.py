@@ -32,7 +32,9 @@ class ATTN(nn.Module):
         self.lossfn = lossfn
 
     def forward(self, x, mask):
-        x = self.embed(x)
+        B, T, N = x.shape
+        # 获取词嵌入向量
+        x = self.embed(x).view(B, T, -1)
         x = self.encoder(x, mask)
         return self.out(x)
 

@@ -19,6 +19,14 @@ class CharLSTM(nn.Module):
                             batch_first=True,
                             bidirectional=bidirectional)
 
+    def init_hidden(self, batch_size):
+        num_layers = self.lstm.num_layers
+        num_directions = 2 if self.lstm.bidirectional else 1
+        hidden_size = self.lstm.hidden_size
+        shape = (num_layers * num_directions, batch_size, hidden_size)
+        return (nn.init.xavier_normal_(torch.empty(shape)),
+                nn.init.xavier_normal_(torch.empty(shape)))
+
     def forward(self, x, lens):
         B, T = x.shape
         # 获取长度由大到小排列的字序列索引
@@ -34,7 +42,7 @@ class CharLSTM(nn.Module):
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
 
-        x, hidden = self.lstm(x)
+        x, hidden = self.lstm(x, self.init_hidden(B))
         # 获取词的字符表示
         reprs = torch.cat(torch.unbind(hidden[0]), dim=1)[reversed_indices]
 

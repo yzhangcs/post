@@ -101,14 +101,14 @@ class PosWiseFFN(nn.Module):
     def __init__(self, Dm, Dh, p=0.2):
         super(PosWiseFFN, self).__init__()
 
-        self.w1 = nn.Linear(Dm, Dh)
+        self.w1 = nn.Sequential(nn.Linear(Dm, Dh), nn.ReLU())
         self.w2 = nn.Linear(Dh, Dm)
         self.norm = nn.LayerNorm(Dm)
         self.drop = nn.Dropout(p)
 
     def forward(self, x):
         residual = x
-        out = F.relu(self.w1(x))
+        out = self.w1(x)
         out = self.w2(out)
         out = self.drop(out)
 

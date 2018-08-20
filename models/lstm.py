@@ -40,14 +40,23 @@ class LSTM(nn.Module):
         self.drop = nn.Dropout()
         self.lossfn = lossfn
 
+    def init_hidden(self, batch_size):
+        num_layers = self.lstm.num_layers
+        num_directions = 2 if self.lstm.bidirectional else 1
+        hidden_size = self.lstm.hidden_size
+        shape = (num_layers * num_directions, batch_size, hidden_size)
+        return (nn.init.xavier_normal_(torch.empty(shape)),
+                nn.init.xavier_normal_(torch.empty(shape)))
+
     def forward(self, x, lens):
         B, T, N = x.shape
         # 获取词嵌入向量
         x = self.embed(x).view(B, T, -1)
+        x = self.drop(x)
 
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
-        x, hidden = self.lstm(x)
+        x, hidden = self.lstm(x, self.init_hidden(B))
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
 

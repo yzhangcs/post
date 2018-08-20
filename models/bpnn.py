@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
@@ -24,7 +23,7 @@ class BPNN(nn.Module):
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
 
         # 隐藏层
-        self.hid = nn.Linear(embdim * window, hiddim)
+        self.hid = nn.Sequential(nn.Linear(embdim * window, hiddim), nn.ReLU())
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
@@ -38,7 +37,7 @@ class BPNN(nn.Module):
         # 获取词嵌入向量
         x = self.embed(x).view(L, -1)
 
-        x = F.relu(self.hid(x))
+        x = self.hid(x)
         x = self.drop(x)
 
         return self.out(x)

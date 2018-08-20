@@ -22,7 +22,7 @@ class CRF(nn.Module):
         T, B, N = emit.shape
 
         logZ = self.get_logZ(emit, mask)
-        score = self.score(emit, target, mask)
+        score = self.get_score(emit, target, mask)
 
         return (logZ - score) / B
 
@@ -34,13 +34,14 @@ class CRF(nn.Module):
         for i in range(1, T):
             trans_i = self.trans.unsqueeze(0)  # [1, N, N]
             emit_i = emit[i].unsqueeze(1)  # [B, 1, N]
+            mask_i = mask[i].unsqueeze(1).expand_as(alpha)  # [B, N]
             scores = trans_i + emit_i + alpha.unsqueeze(2)  # [B, N, N]
             scores = torch.logsumexp(scores, dim=1)  # [B, N]
-            alpha.masked_scatter_(mask[i].unsqueeze(1), scores)
+            alpha[mask_i] = scores[mask_i]
 
         return torch.logsumexp(alpha + self.etrans, dim=1).sum()
 
-    def score(self, emit, target, mask):
+    def get_score(self, emit, target, mask):
         T, B, N = emit.shape
         scores = torch.zeros(T, B)
 

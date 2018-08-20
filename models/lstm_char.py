@@ -52,6 +52,14 @@ class LSTM_CHAR(nn.Module):
         self.drop = nn.Dropout()
         self.lossfn = lossfn
 
+    def init_hidden(self, batch_size):
+        num_layers = self.wlstm.num_layers
+        num_directions = 2 if self.wlstm.bidirectional else 1
+        hidden_size = self.wlstm.hidden_size
+        shape = (num_layers * num_directions, batch_size, hidden_size)
+        return (nn.init.xavier_normal_(torch.empty(shape)),
+                nn.init.xavier_normal_(torch.empty(shape)))
+
     def forward(self, x, lens, char_x, char_lens):
         B, T, N = x.shape
         # 获取词嵌入向量
@@ -68,7 +76,7 @@ class LSTM_CHAR(nn.Module):
         x = self.drop(x)
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
-        x, hidden = self.wlstm(x)
+        x, hidden = self.wlstm(x, self.init_hidden(B))
         x, _ = pad_packed_sequence(x, True)
         if self.encoder is not None:
             x = self.encoder(x, mask)
