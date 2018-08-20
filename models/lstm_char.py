@@ -37,7 +37,7 @@ class LSTM_CHAR(nn.Module):
                              hidden_size=hidden_size,
                              batch_first=True,
                              bidirectional=bidirectional)
-        self.encoder = Encoder(L=3,
+        self.encoder = Encoder(L=1,
                                H=5,
                                Dk=hiddim // 5,
                                Dv=hiddim // 5,
@@ -53,9 +53,9 @@ class LSTM_CHAR(nn.Module):
         self.lossfn = lossfn
 
     def forward(self, x, lens, char_x, char_lens):
-        B, T = x.shape
+        B, T, N = x.shape
         # 获取词嵌入向量
-        x = self.embed(x)
+        x = self.embed(x).view(B, T, -1)
 
         mask = torch.arange(T) < lens.unsqueeze(-1)
 
@@ -76,8 +76,7 @@ class LSTM_CHAR(nn.Module):
 
         return self.out(x)
 
-    def fit(self, trainset, devset, file,
-            epochs, batch_size, interval, eta):
+    def fit(self, trainset, devset, file, epochs, batch_size, interval, eta):
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数

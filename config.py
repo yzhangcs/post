@@ -3,7 +3,7 @@
 
 class Config(object):
 
-    def __init__(self, bpnn=False):
+    def __init__(self, bpnn=True):
         self.window = 5 if bpnn else 1
         self.embdim = 100
         self.char_embdim = 200

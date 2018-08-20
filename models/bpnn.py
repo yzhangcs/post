@@ -36,17 +36,14 @@ class BPNN(nn.Module):
     def forward(self, x):
         L, N = x.shape
         # 获取词嵌入向量
-        x = self.embed(x)
-        # 拼接上下文
-        x = x.view(L, -1)
+        x = self.embed(x).view(L, -1)
 
         x = F.relu(self.hid(x))
         x = self.drop(x)
 
         return self.out(x)
 
-    def fit(self, trainset, devset, file,
-            epochs, batch_size, interval, eta):
+    def fit(self, trainset, devset, file, epochs, batch_size, interval, eta):
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数

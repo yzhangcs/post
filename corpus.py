@@ -69,11 +69,14 @@ class Corpus(object):
         # 更新词汇和字符数
         self.nw = len(self.words)
         self.nc = len(self.chars)
-        # 不在预训练矩阵中的词汇对应的词向量值随机初始化
+        # 初始化词嵌入矩阵
         embed = torch.tensor(embed, dtype=torch.float)
+        vocdim, embdim = self.nw, embed.size(1)
         indices = [self.wdict[w] for w in words]
-        extended_embed = torch.randn(self.nw, embed.size(1))
+        # 在预训练矩阵中的词采用预训练的词向量，否则随机初始化
+        extended_embed = torch.randn(vocdim, embdim) / embdim ** 0.5
         extended_embed[indices] = embed
+
         return extended_embed
 
     def load(self, fdata, charwise=False, window=1, max_len=10):
@@ -109,16 +112,16 @@ class Corpus(object):
             dataset = TensorDataset(x, lens, char_x, char_lens, y)
         else:
             dataset = TensorDataset(x, lens, y)
+
         return dataset
 
     def get_context(self, wiseq, window=1):
         half = window // 2
         length = len(wiseq)
         wiseq = [self.swi] * half + wiseq + [self.ewi] * half
-        context = torch.tensor([wiseq[i:i + window]
-                                for i in range(length)]).long()
-        if window == 1:
-            context = context.squeeze(-1)
+        context = [wiseq[i:i + window] for i in range(length)]
+        context = torch.tensor(context, dtype=torch.long)
+
         return context
 
     def __repr__(self):
@@ -128,6 +131,7 @@ class Corpus(object):
         info += f"{'':2}num of tags: {self.nt}\n"
         info += f"{'':2}num of chars: {self.nc}\n"
         info += f")\n"
+
         return info
 
     @staticmethod
@@ -144,6 +148,7 @@ class Corpus(object):
                 while start < len(lines) and len(lines[start]) <= 1:
                     start += 1
                 sentences.append((wordseq, tagseq))
+
         return sentences
 
     @staticmethod
@@ -152,4 +157,5 @@ class Corpus(object):
         words = sorted(set(np.hstack(wordseqs)))
         tags = sorted(set(np.hstack(tagseqs)))
         chars = sorted(set(''.join(words)))
+
         return words, tags, chars

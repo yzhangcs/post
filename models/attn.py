@@ -36,8 +36,7 @@ class ATTN(nn.Module):
         x = self.encoder(x, mask)
         return self.out(x)
 
-    def fit(self, trainset, devset, file,
-            epochs, batch_size, interval, eta):
+    def fit(self, trainset, devset, file, epochs, batch_size, interval, eta):
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数

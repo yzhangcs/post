@@ -12,11 +12,11 @@ class CRF(nn.Module):
         # 不同的词性个数
         self.nt = nt
         # 句间迁移(FROM->TO)
-        self.trans = nn.Parameter(torch.randn(self.nt, self.nt))
+        self.trans = nn.Parameter(torch.randn(nt, nt) / nt ** 0.5)
         # 句首迁移
-        self.strans = nn.Parameter(torch.randn(self.nt))
+        self.strans = nn.Parameter(torch.randn(nt) / nt ** 0.5)
         # 句尾迁移
-        self.etrans = nn.Parameter(torch.randn(self.nt))
+        self.etrans = nn.Parameter(torch.randn(nt) / nt ** 0.5)
 
     def forward(self, emit, target, mask):
         T, B, N = emit.shape
@@ -30,6 +30,7 @@ class CRF(nn.Module):
         T, B, N = emit.shape
 
         alpha = self.strans + emit[0]  # [B, N]
+
         for i in range(1, T):
             trans_i = self.trans.unsqueeze(0)  # [1, N, N]
             emit_i = emit[i].unsqueeze(1)  # [B, 1, N]
@@ -65,7 +66,8 @@ class CRF(nn.Module):
         delta = torch.zeros(T, B, N)
         paths = torch.zeros(T, B, N, dtype=torch.long)
 
-        delta[0] = self.strans + emit[0]
+        delta[0] = self.strans + emit[0]  # [B, N]
+
         for i in range(1, T):
             trans_i = self.trans.unsqueeze(0)  # [1, N, N]
             emit_i = emit[i].unsqueeze(1)  # [B, 1, N]

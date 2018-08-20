@@ -34,14 +34,16 @@ $ python run.py -e --bi --lstm --char --crf
 
 ```sh
 $ python run.py -h
-usage: run.py [-h] [--crf] [--lstm] [--char] [--bi] [--embed]
-              [--file FILE] [--threads THREADS]
+usage: run.py [-h] [--crf] [--attn] [--bpnn] [--lstm] [--char] [--bi]
+              [--embed] [--file FILE] [--threads THREADS]
 
 Create Neural Network for POS Tagging.
 
 optional arguments:
   -h, --help            show this help message and exit
   --crf                 use crf
+  --attn                use attention
+  --bpnn                use bpnn
   --lstm                use lstm
   --char                use char representation
   --bi                  use bidirectional lstm
@@ -56,30 +58,30 @@ optional arguments:
 ```python
 # BPNN
 BPNN(
-  (embed): Embedding(383647, 100)
+  (embed): Embedding(54303, 100)
   (hid): Linear(in_features=500, out_features=300, bias=True)
   (out): Linear(in_features=300, out_features=32, bias=True)
-  (dropout): Dropout(p=0.5)
+  (drop): Dropout(p=0.5)
 )
 # BPNN+CRF
 BPNN(
-  (embed): Embedding(383647, 100)
+  (embed): Embedding(54303, 100)
   (hid): Linear(in_features=500, out_features=300, bias=True)
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
-  (dropout): Dropout(p=0.5)
+  (drop): Dropout(p=0.5)
 )
 # BiLSTM+CRF
 LSTM(
-  (embed): Embedding(383647, 100)
+  (embed): Embedding(54303, 100)
   (lstm): LSTM(100, 150, batch_first=True, bidirectional=True)
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
-  (dropout): Dropout(p=0.5)
+  (drop): Dropout(p=0.5)
 )
 # BiLSTM+CHAR+CRF
-LSTM(
-  (embed): Embedding(383647, 100)
+LSTM_CHAR(
+  (embed): Embedding(54303, 100)
   (clstm): CharLSTM(
     (embed): Embedding(7477, 100)
     (lstm): LSTM(100, 100, batch_first=True, bidirectional=True)
@@ -87,7 +89,7 @@ LSTM(
   (wlstm): LSTM(300, 150, batch_first=True, bidirectional=True)
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
-  (dropout): Dropout(p=0.6)
+  (drop): Dropout(p=0.5)
 )
 ```
 

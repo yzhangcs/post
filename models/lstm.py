@@ -26,29 +26,24 @@ class LSTM(nn.Module):
             self.embed = nn.Embedding.from_pretrained(pretrained, False)
 
         # 词嵌入LSTM层
-        if bidirectional:
-            self.lstm = nn.LSTM(input_size=embdim,
-                                hidden_size=hiddim // 2,
-                                batch_first=True,
-                                bidirectional=True)
-        else:
-            self.lstm = nn.LSTM(input_size=embdim,
-                                hidden_size=hiddim,
-                                batch_first=True,
-                                bidirectional=False)
+        hidden_size = hiddim // 2 if bidirectional else hiddim
+        self.lstm = nn.LSTM(input_size=embdim,
+                            hidden_size=hidden_size,
+                            batch_first=True,
+                            bidirectional=bidirectional)
 
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
-        self.drop = nn.Dropout(0.6)
+        self.drop = nn.Dropout()
         self.lossfn = lossfn
 
     def forward(self, x, lens):
-        B, T = x.shape
+        B, T, N = x.shape
         # 获取词嵌入向量
-        x = self.embed(x)
+        x = self.embed(x).view(B, T, -1)
 
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
@@ -58,8 +53,7 @@ class LSTM(nn.Module):
 
         return self.out(x)
 
-    def fit(self, trainset, devset, file,
-            epochs, batch_size, interval, eta):
+    def fit(self, trainset, devset, file, epochs, batch_size, interval, eta):
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
