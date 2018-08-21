@@ -52,14 +52,6 @@ class LSTM_CHAR(nn.Module):
         self.drop = nn.Dropout()
         self.lossfn = lossfn
 
-    def init_hidden(self, batch_size):
-        num_layers = self.wlstm.num_layers
-        num_directions = 2 if self.wlstm.bidirectional else 1
-        hidden_size = self.wlstm.hidden_size
-        shape = (num_layers * num_directions, batch_size, hidden_size)
-        return (nn.init.xavier_normal_(torch.empty(shape)),
-                nn.init.xavier_normal_(torch.empty(shape)))
-
     def forward(self, x, lens, char_x, char_lens):
         B, T, N = x.shape
         # 获取词嵌入向量
@@ -76,11 +68,9 @@ class LSTM_CHAR(nn.Module):
         x = self.drop(x)
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
-        x, hidden = self.wlstm(x, self.init_hidden(B))
+        x, hidden = self.wlstm(x)
         x, _ = pad_packed_sequence(x, True)
-        if self.encoder is not None:
-            x = self.encoder(x, mask)
-        x = self.drop(x)
+        x = self.encoder(x, mask) if self.encoder is not None else self.drop(x)
 
         return self.out(x)
 
@@ -131,19 +121,18 @@ class LSTM_CHAR(nn.Module):
         self.optimizer.zero_grad()
 
         x, lens, char_x, char_lens, y = batch
-        # 获取掩码
-        mask = y.ge(0)
-        y = y[mask]
+        B, T, N = x.shape
+        mask = torch.arange(T) < lens.unsqueeze(-1)
+        target = y[mask]
 
         out = self(x, lens, char_x, char_lens)
         if self.crf is None:
             out = out[mask]
-            loss = self.lossfn(out, y)
+            loss = self.lossfn(out, target)
         else:
-            emit = out.transpose(0, 1)  # [T, B, N]
-            target = pad_sequence(torch.split(y, lens.tolist()))  # [T, B]
-            mask = mask.t()  # [T, B]
-            loss = self.crf(emit, target, mask)
+            out = out.transpose(0, 1)  # [T, B, N]
+            y, mask = y.t(), mask.t()  # [T, B]
+            loss = self.crf(out, y, mask)
         # 计算梯度
         loss.backward()
         # 更新参数
@@ -157,22 +146,21 @@ class LSTM_CHAR(nn.Module):
         loss, tp, total = 0, 0, 0
         loader = DataLoader(dataset, batch_size, collate_fn=self.collate_fn)
         for x, lens, char_x, char_lens, y in loader:
-            # 获取掩码
-            mask = y.ge(0)
-            y = y[mask]
+            B, T, N = x.shape
+            mask = torch.arange(T) < lens.unsqueeze(-1)
+            target = y[mask]
 
             out = self.forward(x, lens, char_x, char_lens)
             if self.crf is None:
                 out = out[mask]
                 predict = torch.argmax(out, dim=1)
-                loss += self.lossfn(out, y)
+                loss += self.lossfn(out, target)
             else:
-                emit = out.transpose(0, 1)  # [T, B, N]
-                target = pad_sequence(torch.split(y, lens.tolist()))  # [T, B]
-                mask = mask.t()  # [T, B]
-                predict = self.crf.viterbi(emit, mask)
-                loss += self.crf(emit, target, mask)
-            tp += torch.sum(predict == y).item()
+                out = out.transpose(0, 1)  # [T, B, N]
+                y, mask = y.t(), mask.t()  # [T, B]
+                predict = self.crf.viterbi(out, mask)
+                loss += self.crf(out, y, mask)
+            tp += torch.sum(predict == target).item()
             total += lens.sum().item()
         loss /= len(loader)
 

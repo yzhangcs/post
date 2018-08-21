@@ -4,7 +4,7 @@ import argparse
 from datetime import datetime, timedelta
 
 import torch
-import torch.nn.functional as F
+import torch.nn as nn
 
 from config import Config
 from corpus import Corpus
@@ -67,13 +67,12 @@ if __name__ == '__main__':
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
               f"{'':2}hiddim: {config.hiddim}\n"
-              f"{'':2}outdim: {corpus.nt}\n"
-              f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
+              f"{'':2}outdim: {corpus.nt}\n")
         network = LSTM(vocdim=corpus.nw,
                        embdim=config.embdim,
                        hiddim=config.hiddim,
                        outdim=corpus.nt,
-                       lossfn=F.cross_entropy,
+                       lossfn=nn.CrossEntropyLoss(),
                        use_crf=args.crf,
                        bidirectional=args.bi,
                        pretrained=embed)
@@ -83,15 +82,14 @@ if __name__ == '__main__':
               f"{'':2}embdim: {config.embdim}\n"
               f"{'':2}char_embdim: {config.char_embdim}\n"
               f"{'':2}hiddim: {config.hiddim}\n"
-              f"{'':2}outdim: {corpus.nt}\n"
-              f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
+              f"{'':2}outdim: {corpus.nt}\n")
         network = LSTM_CHAR(vocdim=corpus.nw,
                             chrdim=corpus.nc,
                             embdim=config.embdim,
                             char_embdim=config.char_embdim,
                             hiddim=config.hiddim,
                             outdim=corpus.nt,
-                            lossfn=F.cross_entropy,
+                            lossfn=nn.CrossEntropyLoss(),
                             use_attn=args.attn,
                             use_crf=args.crf,
                             bidirectional=args.bi,
@@ -99,12 +97,11 @@ if __name__ == '__main__':
     elif args.attn:
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
-              f"{'':2}outdim: {corpus.nt}\n"
-              f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
+              f"{'':2}outdim: {corpus.nt}\n")
         network = ATTN(vocdim=corpus.nw,
                        embdim=config.embdim,
                        outdim=corpus.nt,
-                       lossfn=F.cross_entropy,
+                       lossfn=nn.CrossEntropyLoss(),
                        use_crf=args.crf,
                        pretrained=embed)
     else:
@@ -112,14 +109,13 @@ if __name__ == '__main__':
               f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
               f"{'':2}hiddim: {config.hiddim}\n"
-              f"{'':2}outdim: {corpus.nt}\n"
-              f"{'':2}lossfn: {F.cross_entropy.__name__}\n")
+              f"{'':2}outdim: {corpus.nt}\n")
         network = BPNN(window=config.window,
                        vocdim=corpus.nw,
                        embdim=config.embdim,
                        hiddim=config.hiddim,
                        outdim=corpus.nt,
-                       lossfn=F.cross_entropy,
+                       lossfn=nn.CrossEntropyLoss(),
                        use_crf=args.crf,
                        pretrained=embed)
     print(f"{network}\n")

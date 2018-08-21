@@ -11,21 +11,15 @@ class CharLSTM(nn.Module):
         super(CharLSTM, self).__init__()
 
         # 字嵌入
-        self.embed = nn.Embedding(chrdim, embdim)
+        self.embed = nn.Embedding(num_embeddings=chrdim,
+                                  embedding_dim=embdim,
+                                  _weight=torch.randn(chrdim, embdim))
         # 字嵌入LSTM层
         hidden_size = hiddim // 2 if bidirectional else hiddim
         self.lstm = nn.LSTM(input_size=embdim,
                             hidden_size=hidden_size,
                             batch_first=True,
                             bidirectional=bidirectional)
-
-    def init_hidden(self, batch_size):
-        num_layers = self.lstm.num_layers
-        num_directions = 2 if self.lstm.bidirectional else 1
-        hidden_size = self.lstm.hidden_size
-        shape = (num_layers * num_directions, batch_size, hidden_size)
-        return (nn.init.xavier_normal_(torch.empty(shape)),
-                nn.init.xavier_normal_(torch.empty(shape)))
 
     def forward(self, x, lens):
         B, T = x.shape
@@ -42,7 +36,7 @@ class CharLSTM(nn.Module):
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
 
-        x, hidden = self.lstm(x, self.init_hidden(B))
+        x, hidden = self.lstm(x)
         # 获取词的字符表示
         reprs = torch.cat(torch.unbind(hidden[0]), dim=1)[reversed_indices]
 

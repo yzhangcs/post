@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
 
 from modules import CRF, Encoder
@@ -85,19 +84,18 @@ class ATTN(nn.Module):
         self.optimizer.zero_grad()
 
         x, lens, y = batch
-        # 获取掩码
-        mask = y.ge(0)
-        y = y[mask]
+        B, T, N = x.shape
+        mask = torch.arange(T) < lens.unsqueeze(-1)
+        target = y[mask]
 
         out = self(x, mask)
         if self.crf is None:
             out = out[mask]
-            loss = self.lossfn(out, y)
+            loss = self.lossfn(out, target)
         else:
-            emit = out.transpose(0, 1)  # [T, B, N]
-            target = pad_sequence(torch.split(y, lens.tolist()))  # [T, B]
-            mask = mask.t()  # [T, B]
-            loss = self.crf(emit, target, mask)
+            out = out.transpose(0, 1)  # [T, B, N]
+            y, mask = y.t(), mask.t()  # [T, B]
+            loss = self.crf(out, y, mask)
         # 计算梯度
         loss.backward()
         # 更新参数
@@ -111,22 +109,21 @@ class ATTN(nn.Module):
         loss, tp, total = 0, 0, 0
         loader = DataLoader(dataset, batch_size, collate_fn=self.collate_fn)
         for x, lens, y in loader:
-            # 获取掩码
-            mask = y.ge(0)
-            y = y[mask]
+            B, T, N = x.shape
+            mask = torch.arange(T) < lens.unsqueeze(-1)
+            target = y[mask]
 
             out = self.forward(x, mask)
             if self.crf is None:
                 out = out[mask]
                 predict = torch.argmax(out, dim=1)
-                loss += self.lossfn(out, y)
+                loss += self.lossfn(out, target)
             else:
-                emit = out.transpose(0, 1)  # [T, B, N]
-                target = pad_sequence(torch.split(y, lens.tolist()))  # [T, B]
-                mask = mask.t()  # [T, B]
-                predict = self.crf.viterbi(emit, mask)
-                loss += self.crf(emit, target, mask)
-            tp += torch.sum(predict == y).item()
+                out = out.transpose(0, 1)  # [T, B, N]
+                y, mask = y.t(), mask.t()  # [T, B]
+                predict = self.crf.viterbi(out, mask)
+                loss += self.crf(out, y, mask)
+            tp += torch.sum(predict == target).item()
             total += lens.sum().item()
         loss /= len(loader)
 
