@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from torch.utils.data import DataLoader
@@ -16,13 +15,13 @@ class LSTM(nn.Module):
 
     def __init__(self, vocdim, embdim, hiddim, outdim,
                  lossfn, use_crf=False, bidirectional=False,
-                 pretrained=None):
+                 embed=None):
         super(LSTM, self).__init__()
 
-        if pretrained is None:
+        if embed is None:
             self.embed = nn.Embedding(vocdim, embdim)
         else:
-            self.embed = nn.Embedding.from_pretrained(pretrained, False)
+            self.embed = nn.Embedding.from_pretrained(embed, False)
 
         # 词嵌入LSTM层
         hidden_size = hiddim // 2 if bidirectional else hiddim
@@ -39,6 +38,14 @@ class LSTM(nn.Module):
         self.drop = nn.Dropout()
         self.lossfn = lossfn
 
+    def init_hidden(self, batch_size):
+        num_layers = self.lstm.num_layers
+        num_directions = 2 if self.lstm.bidirectional else 1
+        hidden_size = self.lstm.hidden_size
+        shape = (num_layers * num_directions, batch_size, hidden_size)
+        return (torch.randn(shape) / hidden_size ** 0.5,
+                torch.randn(shape) / hidden_size ** 0.5)
+
     def forward(self, x, lens):
         B, T, N = x.shape
         # 获取词嵌入向量
@@ -47,7 +54,7 @@ class LSTM(nn.Module):
 
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
-        x, hidden = self.lstm(x)
+        x, _ = self.lstm(x, self.init_hidden(B))
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
 

@@ -13,13 +13,13 @@ from modules import CRF
 class BPNN(nn.Module):
 
     def __init__(self, window, vocdim, embdim, hiddim, outdim,
-                 lossfn, use_crf=False, pretrained=None):
+                 lossfn, use_crf=False, embed=None):
         super(BPNN, self).__init__()
 
-        if pretrained is None:
+        if embed is None:
             self.embed = nn.Embedding(vocdim, embdim)
         else:
-            self.embed = nn.Embedding.from_pretrained(pretrained, False)
+            self.embed = nn.Embedding.from_pretrained(embed, False)
 
         # 隐藏层
         self.hid = nn.Sequential(nn.Linear(embdim * window, hiddim), nn.ReLU())

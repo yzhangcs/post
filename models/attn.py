@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
@@ -14,13 +13,13 @@ from modules import CRF, Encoder
 class ATTN(nn.Module):
 
     def __init__(self, vocdim, embdim, outdim,
-                 lossfn, use_crf=False, pretrained=None):
+                 lossfn, use_crf=False, embed=None):
         super(ATTN, self).__init__()
 
-        if pretrained is None:
+        if embed is None:
             self.embed = nn.Embedding(vocdim, embdim)
         else:
-            self.embed = nn.Embedding.from_pretrained(pretrained, False)
+            self.embed = nn.Embedding.from_pretrained(embed, False)
         # TODO: add params
         self.encoder = Encoder(L=6, H=5, Dk=20, Dv=20, Dm=100, Dh=200)
         # 输出层

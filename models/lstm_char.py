@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
                                 pad_sequence)
@@ -18,13 +17,13 @@ class LSTM_CHAR(nn.Module):
     def __init__(self, vocdim, chrdim,
                  embdim, char_embdim, hiddim, outdim,
                  lossfn, use_attn=False, use_crf=False, bidirectional=False,
-                 pretrained=None):
+                 embed=None):
         super(LSTM_CHAR, self).__init__()
 
-        if pretrained is None:
+        if embed is None:
             self.embed = nn.Embedding(vocdim, embdim)
         else:
-            self.embed = nn.Embedding.from_pretrained(pretrained, False)
+            self.embed = nn.Embedding.from_pretrained(embed, False)
         # 字嵌入LSTM层
         self.clstm = CharLSTM(chrdim=chrdim,
                               embdim=embdim,
@@ -37,7 +36,7 @@ class LSTM_CHAR(nn.Module):
                              hidden_size=hidden_size,
                              batch_first=True,
                              bidirectional=bidirectional)
-        self.encoder = Encoder(L=1,
+        self.encoder = Encoder(L=3,
                                H=5,
                                Dk=hiddim // 5,
                                Dv=hiddim // 5,
@@ -51,6 +50,13 @@ class LSTM_CHAR(nn.Module):
 
         self.drop = nn.Dropout()
         self.lossfn = lossfn
+    def init_hidden(self, batch_size):
+        num_layers = self.lstm.num_layers
+        num_directions = 2 if self.lstm.bidirectional else 1
+        hidden_size = self.lstm.hidden_size
+        shape = (num_layers * num_directions, batch_size, hidden_size)
+        return (torch.randn(shape) / hidden_size ** 0.5,
+                torch.randn(shape) / hidden_size ** 0.5)
 
     def forward(self, x, lens, char_x, char_lens):
         B, T, N = x.shape
@@ -68,7 +74,7 @@ class LSTM_CHAR(nn.Module):
         x = self.drop(x)
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
-        x, hidden = self.wlstm(x)
+        x, _ = self.wlstm(x, self.init_hidden(B))
         x, _ = pad_packed_sequence(x, True)
         x = self.encoder(x, mask) if self.encoder is not None else self.drop(x)
 

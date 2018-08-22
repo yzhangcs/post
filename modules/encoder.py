@@ -2,12 +2,11 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class Encoder(nn.Module):
 
-    def __init__(self, L, H, Dk, Dv, Dm, Dh, p=0.2):
+    def __init__(self, L, H, Dk, Dv, Dm, Dh, p=0.1):
         super(Encoder, self).__init__()
 
         self.layers = nn.ModuleList([
@@ -39,7 +38,7 @@ class Encoder(nn.Module):
 
 class Layer(nn.Module):
 
-    def __init__(self, H, Dm, Dh, Dk, Dv, p=0.2):
+    def __init__(self, H, Dm, Dh, Dk, Dv, p=0.1):
         super(Layer, self).__init__()
 
         self.attn = MultiHeadAttn(H, Dm, Dk, Dv, p)
@@ -54,7 +53,7 @@ class Layer(nn.Module):
 
 class MultiHeadAttn(nn.Module):
 
-    def __init__(self, H, Dm, Dk, Dv, p=0.2):
+    def __init__(self, H, Dm, Dk, Dv, p=0.1):
         super(MultiHeadAttn, self).__init__()
 
         self.H = H
@@ -66,6 +65,7 @@ class MultiHeadAttn(nn.Module):
         self.wk = nn.Parameter(nn.init.xavier_normal_(torch.empty(H, Dm, Dk)))
         self.wv = nn.Parameter(nn.init.xavier_normal_(torch.empty(H, Dm, Dv)))
 
+        self.softmax = nn.Softmax(dim=-1)
         self.proj = nn.Linear(H * Dv, Dm)
         self.norm = nn.LayerNorm(Dm)
         self.drop = nn.Dropout(p)
@@ -85,7 +85,7 @@ class MultiHeadAttn(nn.Module):
         mask = mask.repeat(H, 1).unsqueeze(1)  # [H * B, 1, Tk]
         attn = (q @ k.transpose(1, 2)) / self.scale  # [H * B, Tq, Tk]
         attn = attn.masked_fill(1 - mask, -float('inf'))
-        attn = F.softmax(attn, dim=-1)
+        attn = self.softmax(attn)
         attn = self.drop(attn)
 
         out = attn @ v  # [H * B, Tq, Dv]
@@ -98,7 +98,7 @@ class MultiHeadAttn(nn.Module):
 
 class PosWiseFFN(nn.Module):
 
-    def __init__(self, Dm, Dh, p=0.2):
+    def __init__(self, Dm, Dh, p=0.1):
         super(PosWiseFFN, self).__init__()
 
         self.w1 = nn.Sequential(nn.Linear(Dm, Dh), nn.ReLU())

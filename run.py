@@ -75,7 +75,7 @@ if __name__ == '__main__':
                        lossfn=nn.CrossEntropyLoss(),
                        use_crf=args.crf,
                        bidirectional=args.bi,
-                       pretrained=embed)
+                       embed=embed)
     elif args.lstm and args.char:
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}chrdim: {corpus.nc}\n"
@@ -93,7 +93,7 @@ if __name__ == '__main__':
                             use_attn=args.attn,
                             use_crf=args.crf,
                             bidirectional=args.bi,
-                            pretrained=embed)
+                            embed=embed)
     elif args.attn:
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
@@ -103,7 +103,7 @@ if __name__ == '__main__':
                        outdim=corpus.nt,
                        lossfn=nn.CrossEntropyLoss(),
                        use_crf=args.crf,
-                       pretrained=embed)
+                       embed=embed)
     else:
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
@@ -117,7 +117,7 @@ if __name__ == '__main__':
                        outdim=corpus.nt,
                        lossfn=nn.CrossEntropyLoss(),
                        use_crf=args.crf,
-                       pretrained=embed)
+                       embed=embed)
     print(f"{network}\n")
     print("Use Adam optimizer to train the network")
     print(f"{'':2}epochs: {config.epochs}\n"
