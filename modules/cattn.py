@@ -17,7 +17,7 @@ class CharATTN(nn.Module):
 
     def forward(self, x, lens):
         B, T = x.shape
-
+        # 获取掩码
         mask = torch.arange(T) < lens.unsqueeze(-1)
         # 获取字嵌入向量
         x = self.embed(x)

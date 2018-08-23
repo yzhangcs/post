@@ -80,13 +80,13 @@ if __name__ == '__main__':
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}chrdim: {corpus.nc}\n"
               f"{'':2}embdim: {config.embdim}\n"
-              f"{'':2}char_embdim: {config.char_embdim}\n"
+              f"{'':2}char_hiddim: {config.char_hiddim}\n"
               f"{'':2}hiddim: {config.hiddim}\n"
               f"{'':2}outdim: {corpus.nt}\n")
         network = LSTM_CHAR(vocdim=corpus.nw,
                             chrdim=corpus.nc,
                             embdim=config.embdim,
-                            char_embdim=config.char_embdim,
+                            char_hiddim=config.char_hiddim,
                             hiddim=config.hiddim,
                             outdim=corpus.nt,
                             lossfn=nn.CrossEntropyLoss(),

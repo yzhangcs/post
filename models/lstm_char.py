@@ -15,7 +15,7 @@ from modules import CRF, CharLSTM, Encoder
 class LSTM_CHAR(nn.Module):
 
     def __init__(self, vocdim, chrdim,
-                 embdim, char_embdim, hiddim, outdim,
+                 embdim, char_hiddim, hiddim, outdim,
                  lossfn, use_attn=False, use_crf=False, bidirectional=False,
                  embed=None):
         super(LSTM_CHAR, self).__init__()
@@ -27,12 +27,12 @@ class LSTM_CHAR(nn.Module):
         # 字嵌入LSTM层
         self.clstm = CharLSTM(chrdim=chrdim,
                               embdim=embdim,
-                              hiddim=char_embdim,
+                              hiddim=char_hiddim,
                               bidirectional=bidirectional)
 
         # 词嵌入LSTM层
         hidden_size = hiddim // 2 if bidirectional else hiddim
-        self.wlstm = nn.LSTM(input_size=embdim + char_embdim,
+        self.wlstm = nn.LSTM(input_size=embdim + char_hiddim,
                              hidden_size=hidden_size,
                              batch_first=True,
                              bidirectional=bidirectional)
@@ -51,20 +51,12 @@ class LSTM_CHAR(nn.Module):
         self.drop = nn.Dropout()
         self.lossfn = lossfn
 
-    def init_hidden(self, batch_size):
-        num_layers = self.wlstm.num_layers
-        num_directions = 2 if self.wlstm.bidirectional else 1
-        hidden_size = self.wlstm.hidden_size
-        shape = (num_layers * num_directions, batch_size, hidden_size)
-        return (torch.randn(shape) / hidden_size ** 0.5,
-                torch.randn(shape) / hidden_size ** 0.5)
-
     def forward(self, x, lens, char_x, char_lens):
         B, T, N = x.shape
+        # 获取掩码
+        mask = torch.arange(T) < lens.unsqueeze(-1)
         # 获取词嵌入向量
         x = self.embed(x).view(B, T, -1)
-
-        mask = torch.arange(T) < lens.unsqueeze(-1)
 
         # 获取字嵌入向量
         char_x = self.clstm(char_x[mask], char_lens[mask])
@@ -73,15 +65,17 @@ class LSTM_CHAR(nn.Module):
         # 拼接词表示和字表示
         x = torch.cat((x, char_x), dim=-1)
         x = self.drop(x)
+
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
-        x, _ = self.wlstm(x, self.init_hidden(B))
+        x, _ = self.wlstm(x)
         x, _ = pad_packed_sequence(x, True)
-        x = self.encoder(x, mask) if self.encoder is not None else self.drop(x)
+        if self.encoder is not None:
+            x = self.encoder(x, mask)
 
         return self.out(x)
 
-    def fit(self, trainset, devset, file, epochs, batch_size, interval, eta):
+    def fit(self, trainset, devset, testset, file, epochs, batch_size, interval, eta):
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
@@ -108,6 +102,10 @@ class LSTM_CHAR(nn.Module):
             print(f"{'dev:':<6} "
                   f"Loss: {loss:.4f} "
                   f"Accuracy: {tp} / {total} = {accuracy:.2%}")
+            loss1, tp1, total1, accuracy1 = self.evaluate(testset)
+            print(f"{'test:':<6} "
+                  f"Loss: {loss1:.4f} "
+                  f"Accuracy: {tp1} / {total1} = {accuracy1:.2%}")
             t = datetime.now() - start
             print(f"{t}s elapsed\n")
             total_time += t
