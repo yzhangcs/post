@@ -129,7 +129,7 @@ if __name__ == '__main__':
     dev_loader = DataLoader(dataset=devset,
                             batch_size=config.batch_size,
                             collate_fn=network.collate_fn)
-    test_loader = DataLoader(dataset=devset,
+    test_loader = DataLoader(dataset=testset,
                              batch_size=config.batch_size,
                              collate_fn=network.collate_fn)
 
@@ -147,7 +147,7 @@ if __name__ == '__main__':
 
     # 载入训练好的模型
     network = torch.load(file)
-    loss, tp, total, accuracy = network.evaluate(loader)
+    loss, tp, total, accuracy = network.evaluate(test_loader)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
           f"Accuracy: {tp} / {total} = {accuracy:.2%}")
