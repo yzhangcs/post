@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from torch.utils.data import DataLoader
 
 from modules import CRF
 
@@ -51,30 +50,25 @@ class LSTM(nn.Module):
 
         return self.out(x)
 
-    def fit(self, trainset, devset, file, epochs, batch_size, interval, eta):
+    def fit(self, train_loader, dev_loader, epochs, interval, eta, file):
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_accuracy = 0, 0.0
-        # 设置数据加载器
-        train_loader = DataLoader(dataset=trainset,
-                                  batch_size=batch_size,
-                                  shuffle=True,
-                                  collate_fn=self.collate_fn)
         # 设置优化器为Adam
         self.optimizer = optim.Adam(params=self.parameters(), lr=eta)
 
         for epoch in range(1, epochs + 1):
             start = datetime.now()
-            for batch in train_loader:
-                self.update(batch)
+            # 更新参数
+            self.update(train_loader)
 
             print(f"Epoch: {epoch} / {epochs}:")
-            loss, tp, total, accuracy = self.evaluate(trainset)
+            loss, tp, total, accuracy = self.evaluate(train_loader)
             print(f"{'train:':<6} "
                   f"Loss: {loss:.4f} "
                   f"Accuracy: {tp} / {total} = {accuracy:.2%}")
-            loss, tp, total, accuracy = self.evaluate(devset)
+            loss, tp, total, accuracy = self.evaluate(dev_loader)
             print(f"{'dev:':<6} "
                   f"Loss: {loss:.4f} "
                   f"Accuracy: {tp} / {total} = {accuracy:.2%}")
@@ -91,40 +85,41 @@ class LSTM(nn.Module):
         print(f"max accuracy of dev is {max_accuracy:.2%} at epoch {max_e}")
         print(f"mean time of each epoch is {total_time / epoch}s\n")
 
-    def update(self, batch):
+    def update(self, loader):
         # 设置为训练模式
         self.train()
-        # 清除梯度
-        self.optimizer.zero_grad()
 
-        x, lens, y = batch
-        B, T, N = x.shape
-        mask = torch.arange(T) < lens.unsqueeze(-1)
-        target = y[mask]
+        # 从加载器中加载数据进行训练
+        for x, lens, y in loader:
+            # 清除梯度
+            self.optimizer.zero_grad()
+            # 获取掩码
+            mask = torch.arange(y.size(1)) < lens.unsqueeze(-1)
+            target = y[mask]
 
-        out = self(x, lens)
-        if self.crf is None:
-            out = out[mask]
-            loss = self.lossfn(out, target)
-        else:
-            out = out.transpose(0, 1)  # [T, B, N]
-            y, mask = y.t(), mask.t()  # [T, B]
-            loss = self.crf(out, y, mask)
-        # 计算梯度
-        loss.backward()
-        # 更新参数
-        self.optimizer.step()
+            out = self(x, lens)
+            if self.crf is None:
+                out = out[mask]
+                loss = self.lossfn(out, target)
+            else:
+                out = out.transpose(0, 1)  # [T, B, N]
+                y, mask = y.t(), mask.t()  # [T, B]
+                loss = self.crf(out, y, mask)
+            # 计算梯度
+            loss.backward()
+            # 更新参数
+            self.optimizer.step()
 
     @torch.no_grad()
-    def evaluate(self, dataset, batch_size=50):
+    def evaluate(self, loader):
         # 设置为评价模式
         self.eval()
 
         loss, tp, total = 0, 0, 0
-        loader = DataLoader(dataset, batch_size, collate_fn=self.collate_fn)
+        # 从加载器中加载数据进行评价
         for x, lens, y in loader:
-            B, T, N = x.shape
-            mask = torch.arange(T) < lens.unsqueeze(-1)
+            # 获取掩码
+            mask = torch.arange(y.size(1)) < lens.unsqueeze(-1)
             target = y[mask]
 
             out = self.forward(x, lens)

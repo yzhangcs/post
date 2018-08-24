@@ -8,7 +8,7 @@ class Config(object):
         self.embdim = 100
         self.char_hiddim = 200
         self.hiddim = 300
-        self.batch_size = 25
+        self.batch_size = 50
         self.epochs = 100
         self.interval = 10
         self.eta = 0.001

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
 from config import Config
 from corpus import Corpus
@@ -119,20 +120,34 @@ if __name__ == '__main__':
                        use_crf=args.crf,
                        embed=embed)
     print(f"{network}\n")
+
+    # 设置数据加载器
+    train_loader = DataLoader(dataset=trainset,
+                              batch_size=config.batch_size,
+                              shuffle=True,
+                              collate_fn=network.collate_fn)
+    dev_loader = DataLoader(dataset=devset,
+                            batch_size=config.batch_size,
+                            collate_fn=network.collate_fn)
+    test_loader = DataLoader(dataset=devset,
+                             batch_size=config.batch_size,
+                             collate_fn=network.collate_fn)
+
     print("Use Adam optimizer to train the network")
     print(f"{'':2}epochs: {config.epochs}\n"
           f"{'':2}batch_size: {config.batch_size}\n"
           f"{'':2}interval: {config.interval}\n"
           f"{'':2}eta: {config.eta}\n")
-    network.fit(trainset, devset, file,
+    network.fit(train_loader=train_loader,
+                dev_loader=dev_loader,
                 epochs=config.epochs,
-                batch_size=config.batch_size,
                 interval=config.interval,
-                eta=config.eta)
+                eta=config.eta,
+                file=file)
 
     # 载入训练好的模型
     network = torch.load(file)
-    loss, tp, total, accuracy = network.evaluate(testset)
+    loss, tp, total, accuracy = network.evaluate(loader)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
           f"Accuracy: {tp} / {total} = {accuracy:.2%}")
