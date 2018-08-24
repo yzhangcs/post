@@ -4,13 +4,13 @@ import torch
 import torch.nn as nn
 
 
-class Encoder(nn.Module):
+class TEncoder(nn.Module):
 
-    def __init__(self, L, H, Dk, Dv, Dm, Dh, p=0.1):
-        super(Encoder, self).__init__()
+    def __init__(self, L, H, Dk, Dv, Dm, Dh, p=0.2):
+        super(TEncoder, self).__init__()
 
         self.layers = nn.ModuleList([
-            Layer(H, Dm, Dh, Dk, Dv, p) for _ in range(L)
+            Layer(H, Dk, Dv, Dm, Dh, p) for _ in range(L)
         ])
         self.drop = nn.Dropout(p)
 
@@ -38,10 +38,10 @@ class Encoder(nn.Module):
 
 class Layer(nn.Module):
 
-    def __init__(self, H, Dm, Dh, Dk, Dv, p=0.1):
+    def __init__(self, H, Dk, Dv, Dm, Dh, p=0.2):
         super(Layer, self).__init__()
 
-        self.attn = MultiHeadAttn(H, Dm, Dk, Dv, p)
+        self.attn = MultiHeadAttn(H, Dk, Dv, Dm, p)
         self.ffn = PosWiseFFN(Dm, Dh, p)
 
     def forward(self, x, mask):
@@ -53,7 +53,7 @@ class Layer(nn.Module):
 
 class MultiHeadAttn(nn.Module):
 
-    def __init__(self, H, Dm, Dk, Dv, p=0.1):
+    def __init__(self, H, Dk, Dv, Dm, p=0.2):
         super(MultiHeadAttn, self).__init__()
 
         self.H = H
@@ -98,7 +98,7 @@ class MultiHeadAttn(nn.Module):
 
 class PosWiseFFN(nn.Module):
 
-    def __init__(self, Dm, Dh, p=0.1):
+    def __init__(self, Dm, Dh, p=0.2):
         super(PosWiseFFN, self).__init__()
 
         self.w1 = nn.Sequential(nn.Linear(Dm, Dh), nn.ReLU())

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from modules import CRF, Encoder
+from modules import CRF, TEncoder
 
 
 class ATTN(nn.Module):
@@ -20,7 +20,7 @@ class ATTN(nn.Module):
         else:
             self.embed = nn.Embedding.from_pretrained(embed, False)
         # TODO: add params
-        self.encoder = Encoder(L=6, H=5, Dk=20, Dv=20, Dm=100, Dh=200)
+        self.encoder = TEncoder(L=6, H=5, Dk=20, Dv=20, Dm=100, Dh=200)
         # 输出层
         self.out = nn.Linear(embdim, outdim)
         # CRF层

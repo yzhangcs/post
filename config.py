@@ -16,4 +16,4 @@ class Config(object):
         self.fdev = 'data/ctb5/dev.conll'
         self.ftest = 'data/ctb5/test.conll'
         self.embed = 'data/embed.txt'
-        self.netpt = 'network.pt'
+        self.netpt = 'net.pt'

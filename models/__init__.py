@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from .attn import ATTN
 from .bpnn import BPNN
 from .lstm import LSTM
 from .lstm_char import LSTM_CHAR
+from .network import Network
 
-__all__ = ('BPNN', 'LSTM_CHAR', 'LSTM', 'ATTN')
+__all__ = ('BPNN', 'LSTM', 'LSTM_CHAR', 'Network')

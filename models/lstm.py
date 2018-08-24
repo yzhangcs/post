@@ -13,8 +13,7 @@ from modules import CRF
 class LSTM(nn.Module):
 
     def __init__(self, vocdim, embdim, hiddim, outdim,
-                 lossfn, use_crf=False, bidirectional=False,
-                 embed=None):
+                 lossfn, use_crf=False, embed=None):
         super(LSTM, self).__init__()
 
         if embed is None:
@@ -23,11 +22,10 @@ class LSTM(nn.Module):
             self.embed = nn.Embedding.from_pretrained(embed, False)
 
         # 词嵌入LSTM层
-        hidden_size = hiddim // 2 if bidirectional else hiddim
         self.lstm = nn.LSTM(input_size=embdim,
-                            hidden_size=hidden_size,
+                            hidden_size=hiddim // 2,
                             batch_first=True,
-                            bidirectional=bidirectional)
+                            bidirectional=True)
 
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
@@ -47,6 +45,7 @@ class LSTM(nn.Module):
         x = pack_padded_sequence(x, lens, True)
         x, _ = self.lstm(x)
         x, _ = pad_packed_sequence(x, True)
+        x = self.drop(x)
 
         return self.out(x)
 

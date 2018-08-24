@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 
 from config import Config
 from corpus import Corpus
-from models import ATTN, BPNN, LSTM, LSTM_CHAR
+from models import BPNN, LSTM, LSTM_CHAR, Network
 
 if __name__ == '__main__':
     # 解析命令参数
@@ -26,10 +26,6 @@ if __name__ == '__main__':
                         dest='lstm', help='use lstm')
     parser.add_argument('--char', action='store_true', default=False,
                         dest='char', help='use char representation')
-    parser.add_argument('--bi', action='store_true', default=False,
-                        dest='bi', help='use bidirectional lstm')
-    parser.add_argument('--embed', '-e', action='store_true', default=False,
-                        dest='embed', help='use pretrained embedding file')
     parser.add_argument('--file', '-f', action='store', dest='file',
                         help='set where to store the model')
     parser.add_argument('--threads', '-t', action='store', dest='threads',
@@ -49,7 +45,7 @@ if __name__ == '__main__':
     # 以训练数据为基础建立语料
     corpus = Corpus(config.ftrain)
     # 用预训练词嵌入扩展语料并返回词嵌入矩阵
-    embed = corpus.extend(config.embed) if args.embed else None
+    embed = corpus.extend(config.embed)
     print(corpus)
 
     print("Load the dataset")
@@ -75,7 +71,6 @@ if __name__ == '__main__':
                        outdim=corpus.nt,
                        lossfn=nn.CrossEntropyLoss(),
                        use_crf=args.crf,
-                       bidirectional=args.bi,
                        embed=embed)
     elif args.lstm and args.char:
         print(f"{'':2}vocdim: {corpus.nw}\n"
@@ -91,21 +86,9 @@ if __name__ == '__main__':
                             hiddim=config.hiddim,
                             outdim=corpus.nt,
                             lossfn=nn.CrossEntropyLoss(),
-                            use_attn=args.attn,
                             use_crf=args.crf,
-                            bidirectional=args.bi,
                             embed=embed)
-    elif args.attn:
-        print(f"{'':2}vocdim: {corpus.nw}\n"
-              f"{'':2}embdim: {config.embdim}\n"
-              f"{'':2}outdim: {corpus.nt}\n")
-        network = ATTN(vocdim=corpus.nw,
-                       embdim=config.embdim,
-                       outdim=corpus.nt,
-                       lossfn=nn.CrossEntropyLoss(),
-                       use_crf=args.crf,
-                       embed=embed)
-    else:
+    elif args.bpnn:
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
@@ -119,6 +102,18 @@ if __name__ == '__main__':
                        lossfn=nn.CrossEntropyLoss(),
                        use_crf=args.crf,
                        embed=embed)
+    else:
+        print(f"{'':2}vocdim: {corpus.nw}\n"
+              f"{'':2}chrdim: {corpus.nc}\n"
+              f"{'':2}embdim: {config.embdim}\n"
+              f"{'':2}char_hiddim: {config.char_hiddim}\n"
+              f"{'':2}outdim: {corpus.nt}\n")
+        network = Network(vocdim=corpus.nw,
+                          chrdim=corpus.nc,
+                          embdim=config.embdim,
+                          char_hiddim=config.char_hiddim,
+                          outdim=corpus.nt,
+                          embed=embed)
     print(f"{network}\n")
 
     # 设置数据加载器

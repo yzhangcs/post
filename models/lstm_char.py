@@ -8,15 +8,14 @@ import torch.optim as optim
 from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
                                 pad_sequence)
 
-from modules import CRF, CharLSTM, Encoder
+from modules import CRF, CharLSTM
 
 
 class LSTM_CHAR(nn.Module):
 
     def __init__(self, vocdim, chrdim,
                  embdim, char_hiddim, hiddim, outdim,
-                 lossfn, use_attn=False, use_crf=False, bidirectional=False,
-                 embed=None):
+                 lossfn, use_crf=False, embed=None):
         super(LSTM_CHAR, self).__init__()
 
         if embed is None:
@@ -26,21 +25,13 @@ class LSTM_CHAR(nn.Module):
         # 字嵌入LSTM层
         self.clstm = CharLSTM(chrdim=chrdim,
                               embdim=embdim,
-                              hiddim=char_hiddim,
-                              bidirectional=bidirectional)
+                              hiddim=char_hiddim)
 
         # 词嵌入LSTM层
-        hidden_size = hiddim // 2 if bidirectional else hiddim
         self.wlstm = nn.LSTM(input_size=embdim + char_hiddim,
-                             hidden_size=hidden_size,
+                             hidden_size=hiddim // 2,
                              batch_first=True,
-                             bidirectional=bidirectional)
-        self.encoder = Encoder(L=3,
-                               H=5,
-                               Dk=hiddim // 5,
-                               Dv=hiddim // 5,
-                               Dm=hiddim,
-                               Dh=hiddim * 2) if use_attn else None
+                             bidirectional=True)
 
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
@@ -69,8 +60,7 @@ class LSTM_CHAR(nn.Module):
         x = pack_padded_sequence(x, lens, True)
         x, _ = self.wlstm(x)
         x, _ = pad_packed_sequence(x, True)
-        if self.encoder is not None:
-            x = self.encoder(x, mask)
+        x = self.drop(x)
 
         return self.out(x)
 

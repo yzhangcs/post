@@ -34,8 +34,8 @@ $ python run.py -e --bi --lstm --char --crf
 
 ```sh
 $ python run.py -h
-usage: run.py [-h] [--crf] [--attn] [--bpnn] [--lstm] [--char] [--bi]
-              [--embed] [--file FILE] [--threads THREADS]
+usage: run.py [-h] [--crf] [--attn] [--bpnn] [--lstm] [--char] [--file FILE]
+              [--threads THREADS]
 
 Create Neural Network for POS Tagging.
 
@@ -46,8 +46,6 @@ optional arguments:
   --bpnn                use bpnn
   --lstm                use lstm
   --char                use char representation
-  --bi                  use bidirectional lstm
-  --embed, -e           use pretrained embedding file
   --file FILE, -f FILE  set where to store the model
   --threads THREADS, -t THREADS
                         set max num of threads
@@ -59,17 +57,25 @@ optional arguments:
 # BPNN
 BPNN(
   (embed): Embedding(54303, 100)
-  (hid): Linear(in_features=500, out_features=300, bias=True)
+  (hid): Sequential(
+    (0): Linear(in_features=500, out_features=300, bias=True)
+    (1): ReLU()
+  )
   (out): Linear(in_features=300, out_features=32, bias=True)
   (drop): Dropout(p=0.5)
+  (lossfn): CrossEntropyLoss()
 )
 # BPNN+CRF
 BPNN(
   (embed): Embedding(54303, 100)
-  (hid): Linear(in_features=500, out_features=300, bias=True)
+  (hid): Sequential(
+    (0): Linear(in_features=500, out_features=300, bias=True)
+    (1): ReLU()
+  )
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (drop): Dropout(p=0.5)
+  (lossfn): CrossEntropyLoss()
 )
 # BiLSTM+CRF
 LSTM(
@@ -78,6 +84,7 @@ LSTM(
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (drop): Dropout(p=0.5)
+  (lossfn): CrossEntropyLoss()
 )
 # BiLSTM+CHAR+CRF
 LSTM_CHAR(
@@ -90,6 +97,7 @@ LSTM_CHAR(
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (drop): Dropout(p=0.5)
+  (lossfn): CrossEntropyLoss()
 )
 ```
 
@@ -100,4 +108,5 @@ LSTM_CHAR(
 * https://github.com/jadore801120/attention-is-all-you-need-pytorch
 * https://arxiv.org/pdf/1706.03762.pdf
 * https://arxiv.org/pdf/1508.01991.pdf
+* https://arxiv.org/pdf/1804.09849.pdf
 

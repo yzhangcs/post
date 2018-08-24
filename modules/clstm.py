@@ -7,18 +7,17 @@ from torch.nn.utils.rnn import pack_padded_sequence
 
 class CharLSTM(nn.Module):
 
-    def __init__(self, chrdim, embdim, hiddim, bidirectional):
+    def __init__(self, chrdim, embdim, hiddim):
         super(CharLSTM, self).__init__()
 
         # 字嵌入
         self.embed = nn.Embedding(num_embeddings=chrdim,
                                   embedding_dim=embdim)
         # 字嵌入LSTM层
-        hidden_size = hiddim // 2 if bidirectional else hiddim
         self.lstm = nn.LSTM(input_size=embdim,
-                            hidden_size=hidden_size,
+                            hidden_size=hiddim // 2,
                             batch_first=True,
-                            bidirectional=bidirectional)
+                            bidirectional=True)
 
     def forward(self, x, lens):
         B, T = x.shape
