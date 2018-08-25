@@ -18,8 +18,6 @@ if __name__ == '__main__':
     )
     parser.add_argument('--crf', action='store_true', default=False,
                         dest='crf', help='use crf')
-    parser.add_argument('--attn', action='store_true', default=False,
-                        dest='attn', help='use attention')
     parser.add_argument('--bpnn', action='store_true', default=False,
                         dest='bpnn', help='use bpnn')
     parser.add_argument('--lstm', action='store_true', default=False,

@@ -36,12 +36,11 @@ Network(
         (drop): Dropout(p=0.5)
       )
     )
-    (drop): Dropout(p=0.5)
   )
   (tenc): TEncoder(
     (layers): ModuleList(
       (0): Layer(
-        (attn): MultiHeadAttn(
+        (attn): MultiHeadATTN(
           (softmax): Softmax()
           (proj): Linear(in_features=300, out_features=300, bias=True)
           (norm): LayerNorm(torch.Size([300]), eps=1e-05, elementwise_affine=True)
@@ -58,7 +57,7 @@ Network(
         )
       )
       (1): Layer(
-        (attn): MultiHeadAttn(
+        (attn): MultiHeadATTN(
           (softmax): Softmax()
           (proj): Linear(in_features=300, out_features=300, bias=True)
           (norm): LayerNorm(torch.Size([300]), eps=1e-05, elementwise_affine=True)
@@ -75,7 +74,7 @@ Network(
         )
       )
       (2): Layer(
-        (attn): MultiHeadAttn(
+        (attn): MultiHeadATTN(
           (softmax): Softmax()
           (proj): Linear(in_features=300, out_features=300, bias=True)
           (norm): LayerNorm(torch.Size([300]), eps=1e-05, elementwise_affine=True)

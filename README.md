@@ -27,14 +27,14 @@ pytorch == 0.4.1
 $ git clone https://github.com/zysite/post.git
 $ cd post
 # eg: BiLSTM+CHAR+CRF
-$ python run.py -e --bi --lstm --char --crf
+$ python run.py --lstm --char --crf
 ```
 
 ### Arguments
 
 ```sh
 $ python run.py -h
-usage: run.py [-h] [--crf] [--attn] [--bpnn] [--lstm] [--char] [--file FILE]
+usage: run.py [-h] [--crf] [--bpnn] [--lstm] [--char] [--file FILE]
               [--threads THREADS]
 
 Create Neural Network for POS Tagging.
@@ -42,7 +42,6 @@ Create Neural Network for POS Tagging.
 optional arguments:
   -h, --help            show this help message and exit
   --crf                 use crf
-  --attn                use attention
   --bpnn                use bpnn
   --lstm                use lstm
   --char                use char representation
@@ -103,10 +102,10 @@ LSTM_CHAR(
 
 ## References
 
-* https://github.com/LiyuanLucasLiu/LM-LSTM-CRF
-* https://github.com/kmkurn/pytorch-crf
-* https://github.com/jadore801120/attention-is-all-you-need-pytorch
-* https://arxiv.org/pdf/1508.01991.pdf
-* https://arxiv.org/pdf/1706.03762.pdf
-* https://arxiv.org/pdf/1804.09849.pdf
+* [LM-LSTM-CRF](https://github.com/LiyuanLucasLiu/LM-LSTM-CRF)
+* [pytorch-crf](https://github.com/kmkurn/pytorch-crf)
+* [attention-is-all-you-need-pytorch](https://github.com/jadore801120/attention-is-all-you-need-pytorch)
+* [Bidirectional LSTM-CRF Models for Sequence Tagging](https://arxiv.org/pdf/1508.01991.pdf)
+* [Attention Is All You Need](https://arxiv.org/pdf/1706.03762.pdf)
+* [The Best of Both Worlds: Combining Recent Advances in Neural Machine Translation](https://arxiv.org/pdf/1804.09849.pdf)
 

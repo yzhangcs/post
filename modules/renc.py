@@ -7,25 +7,24 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 class REncoder(nn.Module):
 
-    def __init__(self, L, Dm):
+    def __init__(self, L, Dm, p=0.2):
         super(REncoder, self).__init__()
 
         self.layers = nn.ModuleList([
-            Layer(Dm) for _ in range(L)
+            Layer(Dm, p) for _ in range(L)
         ])
 
-        self.drop = nn.Dropout()
-
     def forward(self, x, lens):
+        out = x
         for layer in self.layers:
-            x = layer(x, lens)
+            out = layer(out, lens)
 
-        return x
+        return out
 
 
 class Layer(nn.Module):
 
-    def __init__(self, Dm):
+    def __init__(self, Dm, p=0.2):
         super(Layer, self).__init__()
 
         # LSTM层
@@ -34,7 +33,7 @@ class Layer(nn.Module):
                             batch_first=True,
                             bidirectional=True)
 
-        self.drop = nn.Dropout()
+        self.drop = nn.Dropout(p)
 
     def forward(self, x, lens):
         residual = x

@@ -41,7 +41,7 @@ class Layer(nn.Module):
     def __init__(self, H, Dk, Dv, Dm, Dh, p=0.2):
         super(Layer, self).__init__()
 
-        self.attn = MultiHeadAttn(H, Dk, Dv, Dm, p)
+        self.attn = MultiHeadATTN(H, Dk, Dv, Dm, p)
         self.ffn = PosWiseFFN(Dm, Dh, p)
 
     def forward(self, x, mask):
@@ -51,10 +51,10 @@ class Layer(nn.Module):
         return out
 
 
-class MultiHeadAttn(nn.Module):
+class MultiHeadATTN(nn.Module):
 
     def __init__(self, H, Dk, Dv, Dm, p=0.2):
-        super(MultiHeadAttn, self).__init__()
+        super(MultiHeadATTN, self).__init__()
 
         self.H = H
         self.Dk = Dk

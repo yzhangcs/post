@@ -26,13 +26,17 @@ class Network(nn.Module):
                               hiddim=char_hiddim)
 
         Dm = embdim + char_hiddim
+        # RNN编码层
         self.renc = REncoder(L=2, Dm=Dm)
+        # ATTN编码层
         self.tenc = TEncoder(L=3,
                              H=5,
                              Dk=Dm // 5,
                              Dv=Dm // 5,
                              Dm=Dm,
                              Dh=Dm * 2)
+        # Norm层
+        self.norm = nn.LayerNorm(Dm * 2)
         # 输出层
         self.out = nn.Linear(Dm * 2, outdim)
         # CRF层
@@ -55,9 +59,9 @@ class Network(nn.Module):
         x = torch.cat((x, char_x), dim=-1)
         x = self.drop(x)
 
-        # 打包数据
         x = torch.cat((self.renc(x, lens), self.tenc(x, mask)), dim=-1)
         x = self.drop(x)
+        x = self.norm(x)
 
         return self.out(x)
 
