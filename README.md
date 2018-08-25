@@ -106,7 +106,7 @@ LSTM_CHAR(
 * https://github.com/LiyuanLucasLiu/LM-LSTM-CRF
 * https://github.com/kmkurn/pytorch-crf
 * https://github.com/jadore801120/attention-is-all-you-need-pytorch
-* https://arxiv.org/pdf/1706.03762.pdf
 * https://arxiv.org/pdf/1508.01991.pdf
+* https://arxiv.org/pdf/1706.03762.pdf
 * https://arxiv.org/pdf/1804.09849.pdf
 
