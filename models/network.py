@@ -34,11 +34,10 @@ class Network(nn.Module):
                              Dm=Dm,
                              Dh=Dm * 2)
         # 输出层
-        self.out = nn.Linear(Dm, outdim)
+        self.out = nn.Linear(Dm * 2, outdim)
         # CRF层
         self.crf = CRF(outdim)
 
-        self.norm = nn.LayerNorm(Dm)
         self.drop = nn.Dropout()
 
     def forward(self, x, lens, char_x, char_lens):
@@ -57,9 +56,7 @@ class Network(nn.Module):
         x = self.drop(x)
 
         # 打包数据
-        x = self.renc(x, lens)
-        x = self.norm(x)
-        x = self.tenc(x, mask)
+        x = torch.cat((self.renc(x, lens), self.tenc(x, mask)), dim=-1)
         x = self.drop(x)
 
         return self.out(x)
