@@ -42,6 +42,5 @@ class Layer(nn.Module):
         x, _ = self.lstm(x)
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
-        out = x + residual
 
-        return out
+        return x + residual

@@ -11,6 +11,7 @@ Already implemented models:
 TODO:
 
 * implement self-attention
+* optimize the Viterbi algorithm
 
 ## Requirements
 
@@ -41,13 +42,17 @@ Create Neural Network for POS Tagging.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --crf                 use crf
-  --bpnn                use bpnn
-  --lstm                use lstm
-  --char                use char representation
-  --file FILE, -f FILE  set where to store the model
+  --model {bpnn,lstm,lstm_char}, -m {bpnn,lstm,lstm_char}
+                        choose the model for POS Tagging
+  --crf, -c             use crf
+  --batch_size BATCH_SIZE
+                        set the size of batch
+  --epochs EPOCHS       set the max num of epochs
+  --interval INTERVAL   set the max interval to stop
+  --eta ETA             set the learning rate of training
   --threads THREADS, -t THREADS
-                        set max num of threads
+                        set the max num of threads
+  --file FILE, -f FILE  set where to store the model
 ```
 
 ## Structures

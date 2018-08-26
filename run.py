@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from config import Config
+import config
 from corpus import Corpus
 from models import BPNN, LSTM, LSTM_CHAR, Network
 
@@ -16,18 +16,23 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Create Neural Network for POS Tagging.'
     )
-    parser.add_argument('--crf', action='store_true', default=False,
+    parser.add_argument('--model', '-m', default='default',
+                        dest='model', choices=['bpnn', 'lstm', 'lstm_char'],
+                        help='choose the model for POS Tagging')
+    parser.add_argument('--crf', '-c', action='store_true', default=False,
                         dest='crf', help='use crf')
-    parser.add_argument('--bpnn', action='store_true', default=False,
-                        dest='bpnn', help='use bpnn')
-    parser.add_argument('--lstm', action='store_true', default=False,
-                        dest='lstm', help='use lstm')
-    parser.add_argument('--char', action='store_true', default=False,
-                        dest='char', help='use char representation')
-    parser.add_argument('--file', '-f', action='store', dest='file',
-                        help='set where to store the model')
-    parser.add_argument('--threads', '-t', action='store', dest='threads',
-                        default='4', type=int, help='set max num of threads')
+    parser.add_argument('--batch_size', action='store', default=50,
+                        dest='batch_size', help='set the size of batch')
+    parser.add_argument('--epochs', action='store', default=100,
+                        dest='epochs', help='set the max num of epochs')
+    parser.add_argument('--interval', action='store', default=10,
+                        dest='interval', help='set the max interval to stop')
+    parser.add_argument('--eta', action='store', default=0.001,
+                        dest='eta', help='set the learning rate of training')
+    parser.add_argument('--threads', '-t', action='store', default=4,
+                        dest='threads', help='set the max num of threads')
+    parser.add_argument('--file', '-f', action='store', default='network.pt',
+                        dest='file', help='set where to store the model')
     args = parser.parse_args()
 
     # 设置随机数种子
@@ -36,8 +41,8 @@ if __name__ == '__main__':
     torch.set_num_threads(args.threads)
     print(f"Set max num of threads to {args.threads}")
 
-    # 根据参数读取配置
-    config = Config(args.bpnn)
+    # 根据模型读取配置
+    config = config.config[args.model]
 
     print("Preprocess the data")
     # 以训练数据为基础建立语料
@@ -47,18 +52,17 @@ if __name__ == '__main__':
     print(corpus)
 
     print("Load the dataset")
-    trainset = corpus.load(config.ftrain, args.char, config.window)
-    devset = corpus.load(config.fdev, args.char, config.window)
-    testset = corpus.load(config.ftest, args.char, config.window)
+    trainset = corpus.load(config.ftrain, config.charwise, config.window)
+    devset = corpus.load(config.fdev, config.charwise, config.window)
+    testset = corpus.load(config.ftest, config.charwise, config.window)
     print(f"{'':2}size of trainset: {len(trainset)}\n"
           f"{'':2}size of devset: {len(devset)}\n"
           f"{'':2}size of testset: {len(testset)}\n")
-    file = args.file if args.file else config.netpt
 
     start = datetime.now()
 
     print("Create Neural Network")
-    if args.lstm and not args.char:
+    if args.model == 'lstm':
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
               f"{'':2}hiddim: {config.hiddim}\n"
@@ -70,7 +74,7 @@ if __name__ == '__main__':
                        lossfn=nn.CrossEntropyLoss(),
                        use_crf=args.crf,
                        embed=embed)
-    elif args.lstm and args.char:
+    elif args.model == 'lstm_char':
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}chrdim: {corpus.nc}\n"
               f"{'':2}embdim: {config.embdim}\n"
@@ -86,7 +90,7 @@ if __name__ == '__main__':
                             lossfn=nn.CrossEntropyLoss(),
                             use_crf=args.crf,
                             embed=embed)
-    elif args.bpnn:
+    elif args.model == 'bpnn':
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
@@ -111,32 +115,34 @@ if __name__ == '__main__':
                           embdim=config.embdim,
                           char_hiddim=config.char_hiddim,
                           outdim=corpus.nt,
+                          lossfn=nn.CrossEntropyLoss(),
+                          use_crf=args.crf,
                           embed=embed)
     print(f"{network}\n")
 
     # 设置数据加载器
     train_loader = DataLoader(dataset=trainset,
-                              batch_size=config.batch_size,
+                              batch_size=args.batch_size,
                               shuffle=True,
                               collate_fn=network.collate_fn)
     dev_loader = DataLoader(dataset=devset,
-                            batch_size=config.batch_size,
+                            batch_size=args.batch_size,
                             collate_fn=network.collate_fn)
     test_loader = DataLoader(dataset=testset,
-                             batch_size=config.batch_size,
+                             batch_size=args.batch_size,
                              collate_fn=network.collate_fn)
 
     print("Use Adam optimizer to train the network")
-    print(f"{'':2}epochs: {config.epochs}\n"
-          f"{'':2}batch_size: {config.batch_size}\n"
-          f"{'':2}interval: {config.interval}\n"
-          f"{'':2}eta: {config.eta}\n")
+    print(f"{'':2}epochs: {args.epochs}\n"
+          f"{'':2}batch_size: {args.batch_size}\n"
+          f"{'':2}interval: {args.interval}\n"
+          f"{'':2}eta: {args.eta}\n")
     network.fit(train_loader=train_loader,
                 dev_loader=dev_loader,
-                epochs=config.epochs,
-                interval=config.interval,
-                eta=config.eta,
-                file=file)
+                epochs=args.epochs,
+                interval=args.interval,
+                eta=args.eta,
+                file=args.file)
 
     # 载入训练好的模型
     network = torch.load(file)

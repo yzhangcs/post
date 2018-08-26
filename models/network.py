@@ -12,8 +12,8 @@ from modules import CRF, CharLSTM, REncoder, TEncoder
 
 class Network(nn.Module):
 
-    def __init__(self, vocdim, chrdim,
-                 embdim, char_hiddim, outdim, embed=None):
+    def __init__(self, vocdim, chrdim, embdim, char_hiddim, outdim,
+                 lossfn, use_crf=False, embed=None):
         super(Network, self).__init__()
 
         if embed is None:
@@ -40,9 +40,10 @@ class Network(nn.Module):
         # 输出层
         self.out = nn.Linear(Dm * 2, outdim)
         # CRF层
-        self.crf = CRF(outdim)
+        self.crf = CRF(outdim) if use_crf else None
 
         self.drop = nn.Dropout()
+        self.lossfn = lossfn
 
     def forward(self, x, lens, char_x, char_lens):
         B, T, N = x.shape
@@ -113,9 +114,13 @@ class Network(nn.Module):
             target = y[mask]
 
             out = self(x, lens, char_x, char_lens)
-            out = out.transpose(0, 1)  # [T, B, N]
-            y, mask = y.t(), mask.t()  # [T, B]
-            loss = self.crf(out, y, mask)
+            if self.crf is None:
+                out = out[mask]
+                loss = self.lossfn(out, target)
+            else:
+                out = out.transpose(0, 1)  # [T, B, N]
+                y, mask = y.t(), mask.t()  # [T, B]
+                loss = self.crf(out, y, mask)
             # 计算梯度
             loss.backward()
             # 更新参数
@@ -134,10 +139,15 @@ class Network(nn.Module):
             target = y[mask]
 
             out = self.forward(x, lens, char_x, char_lens)
-            out = out.transpose(0, 1)  # [T, B, N]
-            y, mask = y.t(), mask.t()  # [T, B]
-            predict = self.crf.viterbi(out, mask)
-            loss += self.crf(out, y, mask)
+            if self.crf is None:
+                out = out[mask]
+                predict = torch.argmax(out, dim=1)
+                loss += self.lossfn(out, target)
+            else:
+                out = out.transpose(0, 1)  # [T, B, N]
+                y, mask = y.t(), mask.t()  # [T, B]
+                predict = self.crf.viterbi(out, mask)
+                loss += self.crf(out, y, mask)
             tp += torch.sum(predict == target).item()
             total += lens.sum().item()
         loss /= len(loader)
