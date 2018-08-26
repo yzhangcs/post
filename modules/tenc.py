@@ -4,10 +4,10 @@ import torch
 import torch.nn as nn
 
 
-class TEncoder(nn.Module):
+class TransformerEncoder(nn.Module):
 
     def __init__(self, L, H, Dk, Dv, Dm, Dh, p=0.2):
-        super(TEncoder, self).__init__()
+        super(TransformerEncoder, self).__init__()
 
         self.layers = nn.ModuleList([
             Layer(H, Dk, Dv, Dm, Dh, p) for _ in range(L)
@@ -28,8 +28,8 @@ class TEncoder(nn.Module):
         B, T, N = x.shape
 
         x += self.init_pos(T, N)
-        out = self.drop(x)
 
+        out = self.drop(x)
         for layer in self.layers:
             out = layer(out, mask)
 
@@ -108,8 +108,8 @@ class PosWiseFFN(nn.Module):
 
     def forward(self, x):
         residual = x
-        out = self.w1(x)
-        out = self.w2(out)
-        out = self.drop(out)
+        x = self.w1(x)
+        x = self.w2(x)
+        x = self.drop(x)
 
-        return self.norm(out + residual)
+        return self.norm(x + residual)

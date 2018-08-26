@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.nn.utils.rnn import pad_sequence
 
-from modules import CRF, CharLSTM, REncoder, TEncoder
+from modules import CRF, CharLSTM, RNMTPlusEncoder, TransformerEncoder
 
 
 class Network(nn.Module):
@@ -27,14 +27,14 @@ class Network(nn.Module):
 
         Dm = embdim + char_hiddim
         # RNN编码层
-        self.renc = REncoder(L=2, Dm=Dm)
+        self.renc = RNMTPlusEncoder(L=2, Dm=Dm)
         # ATTN编码层
-        self.tenc = TEncoder(L=3,
-                             H=5,
-                             Dk=Dm // 5,
-                             Dv=Dm // 5,
-                             Dm=Dm,
-                             Dh=Dm * 2)
+        self.tenc = TransformerEncoder(L=3,
+                                       H=5,
+                                       Dk=Dm // 5,
+                                       Dv=Dm // 5,
+                                       Dm=Dm,
+                                       Dh=Dm * 2)
         # Norm层
         self.norm = nn.LayerNorm(Dm * 2)
         # 输出层

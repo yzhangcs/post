@@ -145,7 +145,7 @@ if __name__ == '__main__':
                 file=args.file)
 
     # 载入训练好的模型
-    network = torch.load(file)
+    network = torch.load(args.file)
     loss, tp, total, accuracy = network.evaluate(test_loader)
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
