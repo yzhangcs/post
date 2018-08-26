@@ -28,7 +28,7 @@ pytorch == 0.4.1
 $ git clone https://github.com/zysite/post.git
 $ cd post
 # eg: BiLSTM+CHAR+CRF
-$ python run.py --lstm --char --crf
+$ python run.py --model=lstm_char --crf
 ```
 
 ### Arguments

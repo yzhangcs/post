@@ -2,7 +2,6 @@
 
 
 class Config(object):
-
     ftrain = 'data/ctb5/train.conll'
     fdev = 'data/ctb5/dev.conll'
     ftest = 'data/ctb5/test.conll'
@@ -10,7 +9,6 @@ class Config(object):
 
 
 class BPNNConfig(Config):
-
     window = 5
     embdim = 100
     hiddim = 300
@@ -18,7 +16,6 @@ class BPNNConfig(Config):
 
 
 class LSTMConfig(Config):
-
     window = 1
     embdim = 100
     hiddim = 300
@@ -26,7 +23,6 @@ class LSTMConfig(Config):
 
 
 class LSTMCHARConfig(Config):
-
     window = 1
     embdim = 100
     char_hiddim = 200
@@ -35,7 +31,6 @@ class LSTMCHARConfig(Config):
 
 
 class NetworkConfig(Config):
-
     window = 1
     embdim = 100
     char_hiddim = 200
