@@ -35,10 +35,12 @@ $ python run.py --lstm --char --crf
 
 ```sh
 $ python run.py -h
-usage: run.py [-h] [--crf] [--bpnn] [--lstm] [--char] [--file FILE]
-              [--threads THREADS]
+usage: run.py [-h] [--model {bpnn,lstm,lstm_char}] [--crf]
+              [--batch_size BATCH_SIZE] [--epochs EPOCHS]
+              [--interval INTERVAL] [--eta ETA] [--threads THREADS]
+              [--file FILE]
 
-Create Neural Network for POS Tagging.
+Create several models for POS Tagging.
 
 optional arguments:
   -h, --help            show this help message and exit
