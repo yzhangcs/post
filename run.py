@@ -21,15 +21,15 @@ if __name__ == '__main__':
                         help='choose the model for POS Tagging')
     parser.add_argument('--crf', '-c', action='store_true', default=False,
                         dest='crf', help='use crf')
-    parser.add_argument('--batch_size', action='store', default=50,
+    parser.add_argument('--batch_size', action='store', default=50, type=int,
                         dest='batch_size', help='set the size of batch')
-    parser.add_argument('--epochs', action='store', default=100,
+    parser.add_argument('--epochs', action='store', default=100, type=int,
                         dest='epochs', help='set the max num of epochs')
-    parser.add_argument('--interval', action='store', default=10,
+    parser.add_argument('--interval', action='store', default=10, type=int,
                         dest='interval', help='set the max interval to stop')
-    parser.add_argument('--eta', action='store', default=0.001,
+    parser.add_argument('--eta', action='store', default=0.001, type=float,
                         dest='eta', help='set the learning rate of training')
-    parser.add_argument('--threads', '-t', action='store', default=4,
+    parser.add_argument('--threads', '-t', action='store', default=4, type=int,
                         dest='threads', help='set the max num of threads')
     parser.add_argument('--file', '-f', action='store', default='network.pt',
                         dest='file', help='set where to store the model')
@@ -139,6 +139,7 @@ if __name__ == '__main__':
           f"{'':2}eta: {args.eta}\n")
     network.fit(train_loader=train_loader,
                 dev_loader=dev_loader,
+                test_loader=test_loader,
                 epochs=args.epochs,
                 interval=args.interval,
                 eta=args.eta,
