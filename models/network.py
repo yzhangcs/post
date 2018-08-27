@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.nn.utils.rnn import pad_sequence
 
-from modules import CRF, CharLSTM, RNMTPlusEncoder, TransformerEncoder
+from modules import CRF, CharLSTM, Encoder
 
 
 class Network(nn.Module):
@@ -26,19 +26,10 @@ class Network(nn.Module):
                               hiddim=char_hiddim)
 
         Dm = embdim + char_hiddim
-        # RNN编码层
-        self.renc = RNMTPlusEncoder(L=2, Dm=Dm)
-        # ATTN编码层
-        self.tenc = TransformerEncoder(L=3,
-                                       H=5,
-                                       Dk=Dm // 5,
-                                       Dv=Dm // 5,
-                                       Dm=Dm,
-                                       Dh=Dm * 2)
-        # Norm层
-        self.norm = nn.LayerNorm(Dm * 2)
+        # 编码层
+        self.encoder = Encoder(Dm=Dm)
         # 输出层
-        self.out = nn.Linear(Dm * 2, outdim)
+        self.out = nn.Linear(Dm, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
 
@@ -60,9 +51,8 @@ class Network(nn.Module):
         x = torch.cat((x, char_x), dim=-1)
         x = self.drop(x)
 
-        x = torch.cat((self.renc(x, lens), self.tenc(x, mask)), dim=-1)
+        x = self.encoder(x, lens)
         x = self.drop(x)
-        x = self.norm(x)
 
         return self.out(x)
 

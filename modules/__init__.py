@@ -2,7 +2,7 @@
 
 from .clstm import CharLSTM
 from .crf import CRF
-from .renc import RNMTPlusEncoder
-from .tenc import TransformerEncoder
+from .encoder import Encoder
 
-__all__ = ('CharLSTM', 'CRF', 'RNMTPlusEncoder', 'TransformerEncoder')
+
+__all__ = ('CharLSTM', 'CRF', 'Encoder')
