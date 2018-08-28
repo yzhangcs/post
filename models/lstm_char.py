@@ -37,9 +37,10 @@ class LSTM_CHAR(nn.Module):
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
+        # 损失函数
+        self.lossfn = self.crf if use_crf else lossfn
 
         self.drop = nn.Dropout()
-        self.lossfn = lossfn
 
     def forward(self, x, lens, char_x, char_lens):
         B, T, N = x.shape
@@ -118,7 +119,7 @@ class LSTM_CHAR(nn.Module):
             else:
                 out = out.transpose(0, 1)  # [T, B, N]
                 y, mask = y.t(), mask.t()  # [T, B]
-                loss = self.crf(out, y, mask)
+                loss = self.lossfn(out, y, mask)
             # 计算梯度
             loss.backward()
             # 更新参数
@@ -145,7 +146,7 @@ class LSTM_CHAR(nn.Module):
                 out = out.transpose(0, 1)  # [T, B, N]
                 y, mask = y.t(), mask.t()  # [T, B]
                 predict = self.crf.viterbi(out, mask)
-                loss += self.crf(out, y, mask)
+                loss += self.lossfn(out, y, mask)
             tp += torch.sum(predict == target).item()
             total += lens.sum().item()
         loss /= len(loader)
