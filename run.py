@@ -139,7 +139,6 @@ if __name__ == '__main__':
           f"{'':2}eta: {args.eta}\n")
     network.fit(train_loader=train_loader,
                 dev_loader=dev_loader,
-                test_loader=test_loader,
                 epochs=args.epochs,
                 interval=args.interval,
                 eta=args.eta,
