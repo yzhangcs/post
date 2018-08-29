@@ -10,7 +10,7 @@ Already implemented models:
 
 TODO:
 
-* implement self-attention
+* implement the encoder described by [this paper](https://arxiv.org/pdf/1804.09849.pdf)
 * optimize the Viterbi algorithm
 
 ## Requirements
@@ -35,7 +35,8 @@ $ python run.py --model=lstm_char --crf
 
 ```sh
 $ python run.py -h
-usage: run.py [-h] [--model {bpnn,lstm,lstm_char}] [--crf] [--prob PROB]              [--batch_size BATCH_SIZE] [--epochs EPOCHS]
+usage: run.py [-h] [--model {bpnn,lstm,lstm_char}] [--crf] [--prob PROB]
+              [--batch_size BATCH_SIZE] [--epochs EPOCHS]
               [--interval INTERVAL] [--eta ETA] [--threads THREADS]
               [--file FILE]
 
@@ -45,7 +46,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --model {bpnn,lstm,lstm_char}, -m {bpnn,lstm,lstm_char}
                         choose the model for POS Tagging
-  --crf, -c             use crf
+  --crf                 use crf
   --prob PROB           set the prob of dropout
   --batch_size BATCH_SIZE
                         set the size of batch
