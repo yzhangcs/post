@@ -106,7 +106,7 @@ class Corpus(object):
         lens = torch.tensor(lens)
         char_x = pad_sequence(char_x, True)
         char_lens = pad_sequence(char_lens, True)
-        y = pad_sequence(y, True, padding_value=-1)
+        y = pad_sequence(y, True)
 
         if charwise:
             dataset = TensorDataset(x, lens, char_x, char_lens, y)

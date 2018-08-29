@@ -11,6 +11,7 @@ Already implemented models:
 TODO:
 
 * implement self-attention
+* optimize the Viterbi algorithm
 
 ## Requirements
 
@@ -27,30 +28,33 @@ pytorch == 0.4.1
 $ git clone https://github.com/zysite/post.git
 $ cd post
 # eg: BiLSTM+CHAR+CRF
-$ python run.py -e --bi --lstm --char --crf
+$ python run.py --model=lstm_char --crf
 ```
 
 ### Arguments
 
 ```sh
 $ python run.py -h
-usage: run.py [-h] [--crf] [--attn] [--bpnn] [--lstm] [--char] [--bi]
-              [--embed] [--file FILE] [--threads THREADS]
+usage: run.py [-h] [--model {bpnn,lstm,lstm_char}] [--crf]
+              [--batch_size BATCH_SIZE] [--epochs EPOCHS]
+              [--interval INTERVAL] [--eta ETA] [--threads THREADS]
+              [--file FILE]
 
-Create Neural Network for POS Tagging.
+Create several models for POS Tagging.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --crf                 use crf
-  --attn                use attention
-  --bpnn                use bpnn
-  --lstm                use lstm
-  --char                use char representation
-  --bi                  use bidirectional lstm
-  --embed, -e           use pretrained embedding file
-  --file FILE, -f FILE  set where to store the model
+  --model {bpnn,lstm,lstm_char}, -m {bpnn,lstm,lstm_char}
+                        choose the model for POS Tagging
+  --crf, -c             use crf
+  --batch_size BATCH_SIZE
+                        set the size of batch
+  --epochs EPOCHS       set the max num of epochs
+  --interval INTERVAL   set the max interval to stop
+  --eta ETA             set the learning rate of training
   --threads THREADS, -t THREADS
-                        set max num of threads
+                        set the max num of threads
+  --file FILE, -f FILE  set where to store the model
 ```
 
 ## Structures
@@ -59,17 +63,25 @@ optional arguments:
 # BPNN
 BPNN(
   (embed): Embedding(54303, 100)
-  (hid): Linear(in_features=500, out_features=300, bias=True)
+  (hid): Sequential(
+    (0): Linear(in_features=500, out_features=300, bias=True)
+    (1): ReLU()
+  )
   (out): Linear(in_features=300, out_features=32, bias=True)
   (drop): Dropout(p=0.5)
+  (lossfn): CrossEntropyLoss()
 )
 # BPNN+CRF
 BPNN(
   (embed): Embedding(54303, 100)
-  (hid): Linear(in_features=500, out_features=300, bias=True)
+  (hid): Sequential(
+    (0): Linear(in_features=500, out_features=300, bias=True)
+    (1): ReLU()
+  )
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (drop): Dropout(p=0.5)
+  (lossfn): CrossEntropyLoss()
 )
 # BiLSTM+CRF
 LSTM(
@@ -78,6 +90,7 @@ LSTM(
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (drop): Dropout(p=0.5)
+  (lossfn): CrossEntropyLoss()
 )
 # BiLSTM+CHAR+CRF
 LSTM_CHAR(
@@ -90,13 +103,16 @@ LSTM_CHAR(
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (drop): Dropout(p=0.5)
+  (lossfn): CrossEntropyLoss()
 )
 ```
 
 ## References
 
-* https://github.com/LiyuanLucasLiu/LM-LSTM-CRF
-* https://github.com/kmkurn/pytorch-crf
-* https://github.com/jadore801120/attention-is-all-you-need-pytorch
-* https://arxiv.org/pdf/1706.03762.pdf
+* [LM-LSTM-CRF](https://github.com/LiyuanLucasLiu/LM-LSTM-CRF)
+* [pytorch-crf](https://github.com/kmkurn/pytorch-crf)
+* [attention-is-all-you-need-pytorch](https://github.com/jadore801120/attention-is-all-you-need-pytorch)
+* [Bidirectional LSTM-CRF Models for Sequence Tagging](https://arxiv.org/pdf/1508.01991.pdf)
+* [Attention Is All You Need](https://arxiv.org/pdf/1706.03762.pdf)
+* [The Best of Both Worlds: Combining Recent Advances in Neural Machine Translation](https://arxiv.org/pdf/1804.09849.pdf)
 

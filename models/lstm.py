@@ -4,11 +4,8 @@ from datetime import datetime, timedelta
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
-                                pad_sequence)
-from torch.utils.data import DataLoader
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 from modules import CRF
 
@@ -16,37 +13,28 @@ from modules import CRF
 class LSTM(nn.Module):
 
     def __init__(self, vocdim, embdim, hiddim, outdim,
-                 lossfn, use_crf=False, bidirectional=False,
-                 pretrained=None):
+                 lossfn, use_crf=False, embed=None):
         super(LSTM, self).__init__()
 
-        if pretrained is None:
+        if embed is None:
             self.embed = nn.Embedding(vocdim, embdim)
         else:
-            self.embed = nn.Embedding.from_pretrained(pretrained, False)
+            self.embed = nn.Embedding.from_pretrained(embed, False)
 
         # 词嵌入LSTM层
-        hidden_size = hiddim // 2 if bidirectional else hiddim
         self.lstm = nn.LSTM(input_size=embdim,
-                            hidden_size=hidden_size,
+                            hidden_size=hiddim // 2,
                             batch_first=True,
-                            bidirectional=bidirectional)
+                            bidirectional=True)
 
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
+        # 损失函数
+        self.lossfn = lossfn if not use_crf else None
 
         self.drop = nn.Dropout()
-        self.lossfn = lossfn
-
-    def init_hidden(self, batch_size):
-        num_layers = self.lstm.num_layers
-        num_directions = 2 if self.lstm.bidirectional else 1
-        hidden_size = self.lstm.hidden_size
-        shape = (num_layers * num_directions, batch_size, hidden_size)
-        return (nn.init.xavier_normal_(torch.empty(shape)),
-                nn.init.xavier_normal_(torch.empty(shape)))
 
     def forward(self, x, lens):
         B, T, N = x.shape
@@ -56,36 +44,31 @@ class LSTM(nn.Module):
 
         # 打包数据
         x = pack_padded_sequence(x, lens, True)
-        x, hidden = self.lstm(x, self.init_hidden(B))
+        x, _ = self.lstm(x)
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
 
         return self.out(x)
 
-    def fit(self, trainset, devset, file, epochs, batch_size, interval, eta):
+    def fit(self, train_loader, dev_loader, epochs, interval, eta, file):
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
         max_e, max_accuracy = 0, 0.0
-        # 设置数据加载器
-        train_loader = DataLoader(dataset=trainset,
-                                  batch_size=batch_size,
-                                  shuffle=True,
-                                  collate_fn=self.collate_fn)
         # 设置优化器为Adam
         self.optimizer = optim.Adam(params=self.parameters(), lr=eta)
 
         for epoch in range(1, epochs + 1):
             start = datetime.now()
-            for batch in train_loader:
-                self.update(batch)
+            # 更新参数
+            self.update(train_loader)
 
             print(f"Epoch: {epoch} / {epochs}:")
-            loss, tp, total, accuracy = self.evaluate(trainset)
+            loss, tp, total, accuracy = self.evaluate(train_loader)
             print(f"{'train:':<6} "
                   f"Loss: {loss:.4f} "
                   f"Accuracy: {tp} / {total} = {accuracy:.2%}")
-            loss, tp, total, accuracy = self.evaluate(devset)
+            loss, tp, total, accuracy = self.evaluate(dev_loader)
             print(f"{'dev:':<6} "
                   f"Loss: {loss:.4f} "
                   f"Accuracy: {tp} / {total} = {accuracy:.2%}")
@@ -102,55 +85,54 @@ class LSTM(nn.Module):
         print(f"max accuracy of dev is {max_accuracy:.2%} at epoch {max_e}")
         print(f"mean time of each epoch is {total_time / epoch}s\n")
 
-    def update(self, batch):
+    def update(self, loader):
         # 设置为训练模式
         self.train()
-        # 清除梯度
-        self.optimizer.zero_grad()
 
-        x, lens, y = batch
-        # 获取掩码
-        mask = y.ge(0)
-        y = y[mask]
+        # 从加载器中加载数据进行训练
+        for x, lens, y in loader:
+            # 清除梯度
+            self.optimizer.zero_grad()
+            # 获取掩码
+            mask = torch.arange(y.size(1)) < lens.unsqueeze(-1)
+            target = y[mask]
 
-        out = self(x, lens)
-        if self.crf is None:
-            out = out[mask]
-            loss = self.lossfn(out, y)
-        else:
-            emit = out.transpose(0, 1)  # [T, B, N]
-            target = pad_sequence(torch.split(y, lens.tolist()))  # [T, B]
-            mask = mask.t()  # [T, B]
-            loss = self.crf(emit, target, mask)
-        # 计算梯度
-        loss.backward()
-        # 更新参数
-        self.optimizer.step()
+            out = self(x, lens)
+            if self.crf is None:
+                out = out[mask]
+                loss = self.lossfn(out, target)
+            else:
+                out = out.transpose(0, 1)  # [T, B, N]
+                y, mask = y.t(), mask.t()  # [T, B]
+                loss = self.crf(out, y, mask)
+            # 计算梯度
+            loss.backward()
+            # 更新参数
+            self.optimizer.step()
 
     @torch.no_grad()
-    def evaluate(self, dataset, batch_size=50):
+    def evaluate(self, loader):
         # 设置为评价模式
         self.eval()
 
         loss, tp, total = 0, 0, 0
-        loader = DataLoader(dataset, batch_size, collate_fn=self.collate_fn)
+        # 从加载器中加载数据进行评价
         for x, lens, y in loader:
             # 获取掩码
-            mask = y.ge(0)
-            y = y[mask]
+            mask = torch.arange(y.size(1)) < lens.unsqueeze(-1)
+            target = y[mask]
 
             out = self.forward(x, lens)
             if self.crf is None:
                 out = out[mask]
                 predict = torch.argmax(out, dim=1)
-                loss += self.lossfn(out, y)
+                loss += self.lossfn(out, target)
             else:
-                emit = out.transpose(0, 1)  # [T, B, N]
-                target = pad_sequence(torch.split(y, lens.tolist()))  # [T, B]
-                mask = mask.t()  # [T, B]
-                predict = self.crf.viterbi(emit, mask)
-                loss += self.crf(emit, target, mask)
-            tp += torch.sum(predict == y).item()
+                out = out.transpose(0, 1)  # [T, B, N]
+                y, mask = y.t(), mask.t()  # [T, B]
+                predict = self.crf.viterbi(out, mask)
+                loss += self.crf(out, y, mask)
+            tp += torch.sum(predict == target).item()
             total += lens.sum().item()
         loss /= len(loader)
 

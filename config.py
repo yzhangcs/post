@@ -2,18 +2,44 @@
 
 
 class Config(object):
+    ftrain = 'data/ctb5/train.conll'
+    fdev = 'data/ctb5/dev.conll'
+    ftest = 'data/ctb5/test.conll'
+    embed = 'data/embed.txt'
 
-    def __init__(self, bpnn=True):
-        self.window = 5 if bpnn else 1
-        self.embdim = 100
-        self.char_embdim = 200
-        self.hiddim = 300
-        self.batch_size = 25
-        self.epochs = 100
-        self.interval = 10
-        self.eta = 0.001
-        self.ftrain = 'data/ctb5/train.conll'
-        self.fdev = 'data/ctb5/dev.conll'
-        self.ftest = 'data/ctb5/test.conll'
-        self.embed = 'data/embed.txt'
-        self.netpt = 'network.pt'
+
+class BPNNConfig(Config):
+    window = 5
+    embdim = 100
+    hiddim = 300
+    charwise = False
+
+
+class LSTMConfig(Config):
+    window = 1
+    embdim = 100
+    hiddim = 300
+    charwise = False
+
+
+class LSTMCHARConfig(Config):
+    window = 1
+    embdim = 100
+    char_hiddim = 200
+    hiddim = 300
+    charwise = True
+
+
+class NetworkConfig(Config):
+    window = 1
+    embdim = 100
+    char_hiddim = 200
+    charwise = True
+
+
+config = {
+    'bpnn': BPNNConfig,
+    'lstm': LSTMConfig,
+    'lstm_char': LSTMCHARConfig,
+    'default': NetworkConfig,
+}

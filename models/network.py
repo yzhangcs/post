@@ -5,18 +5,16 @@ from datetime import datetime, timedelta
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.nn.utils.rnn import (pack_padded_sequence, pad_packed_sequence,
-                                pad_sequence)
+from torch.nn.utils.rnn import pad_sequence
 
-from modules import CRF, CharLSTM
+from modules import CRF, CharLSTM, Encoder
 
 
-class LSTM_CHAR(nn.Module):
+class Network(nn.Module):
 
-    def __init__(self, vocdim, chrdim,
-                 embdim, char_hiddim, hiddim, outdim,
+    def __init__(self, vocdim, chrdim, embdim, char_hiddim, outdim,
                  lossfn, use_crf=False, embed=None):
-        super(LSTM_CHAR, self).__init__()
+        super(Network, self).__init__()
 
         if embed is None:
             self.embed = nn.Embedding(vocdim, embdim)
@@ -27,20 +25,16 @@ class LSTM_CHAR(nn.Module):
                               embdim=embdim,
                               hiddim=char_hiddim)
 
-        # 词嵌入LSTM层
-        self.wlstm = nn.LSTM(input_size=embdim + char_hiddim,
-                             hidden_size=hiddim // 2,
-                             batch_first=True,
-                             bidirectional=True)
-
+        Dm = embdim + char_hiddim
+        # 编码层
+        self.encoder = Encoder(Dm=Dm)
         # 输出层
-        self.out = nn.Linear(hiddim, outdim)
+        self.out = nn.Linear(Dm, outdim)
         # CRF层
         self.crf = CRF(outdim) if use_crf else None
-        # 损失函数
-        self.lossfn = lossfn if not use_crf else None
 
         self.drop = nn.Dropout()
+        self.lossfn = lossfn
 
     def forward(self, x, lens, char_x, char_lens):
         B, T, N = x.shape
@@ -57,10 +51,7 @@ class LSTM_CHAR(nn.Module):
         x = torch.cat((x, char_x), dim=-1)
         x = self.drop(x)
 
-        # 打包数据
-        x = pack_padded_sequence(x, lens, True)
-        x, _ = self.wlstm(x)
-        x, _ = pad_packed_sequence(x, True)
+        x = self.encoder(x, lens)
         x = self.drop(x)
 
         return self.out(x)
