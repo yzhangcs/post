@@ -13,9 +13,8 @@ from modules import CRF, CharLSTM
 
 class LSTM_CHAR(nn.Module):
 
-    def __init__(self, vocdim, chrdim,
-                 embdim, char_hiddim, hiddim, outdim,
-                 lossfn, use_crf=False, embed=None):
+    def __init__(self, vocdim, chrdim, embdim, char_hiddim, hiddim, outdim,
+                 lossfn, embed=None, crf=False, p=0.5):
         super(LSTM_CHAR, self).__init__()
 
         if embed is None:
@@ -36,11 +35,11 @@ class LSTM_CHAR(nn.Module):
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
-        self.crf = CRF(outdim) if use_crf else None
+        self.crf = CRF(outdim) if crf else None
         # 损失函数
-        self.lossfn = lossfn if not use_crf else None
+        self.lossfn = lossfn if not crf else None
 
-        self.drop = nn.Dropout()
+        self.drop = nn.Dropout(p)
 
     def forward(self, x, lens, char_x, char_lens):
         B, T, N = x.shape

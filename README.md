@@ -35,8 +35,7 @@ $ python run.py --model=lstm_char --crf
 
 ```sh
 $ python run.py -h
-usage: run.py [-h] [--model {bpnn,lstm,lstm_char}] [--crf]
-              [--batch_size BATCH_SIZE] [--epochs EPOCHS]
+usage: run.py [-h] [--model {bpnn,lstm,lstm_char}] [--crf] [--prob PROB]              [--batch_size BATCH_SIZE] [--epochs EPOCHS]
               [--interval INTERVAL] [--eta ETA] [--threads THREADS]
               [--file FILE]
 
@@ -47,6 +46,7 @@ optional arguments:
   --model {bpnn,lstm,lstm_char}, -m {bpnn,lstm,lstm_char}
                         choose the model for POS Tagging
   --crf, -c             use crf
+  --prob PROB           set the prob of dropout
   --batch_size BATCH_SIZE
                         set the size of batch
   --epochs EPOCHS       set the max num of epochs
