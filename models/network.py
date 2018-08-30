@@ -13,7 +13,7 @@ from modules import CRF, CharLSTM, Encoder
 class Network(nn.Module):
 
     def __init__(self, vocdim, chrdim, embdim, char_hiddim, outdim,
-                 lossfn, use_crf=False, embed=None):
+                 lossfn, embed=None, crf=False, p=0.5):
         super(Network, self).__init__()
 
         if embed is None:
@@ -25,16 +25,22 @@ class Network(nn.Module):
                               embdim=embdim,
                               hiddim=char_hiddim)
 
+        # TODO
+        cascade = False
         Dm = embdim + char_hiddim
         # 编码层
-        self.encoder = Encoder(Dm=Dm)
+        self.encoder = Encoder(Dm=Dm, cascade=cascade)
         # 输出层
-        self.out = nn.Linear(Dm, outdim)
+        if cascade:
+            self.out = nn.Linear(Dm, outdim)
+        else:
+            self.out = nn.Linear(Dm * 2, outdim)
         # CRF层
-        self.crf = CRF(outdim) if use_crf else None
+        self.crf = CRF(outdim) if crf else None
+        # 损失函数
+        self.lossfn = lossfn if not crf else None
 
-        self.drop = nn.Dropout()
-        self.lossfn = lossfn
+        self.drop = nn.Dropout(p)
 
     def forward(self, x, lens, char_x, char_lens):
         B, T, N = x.shape

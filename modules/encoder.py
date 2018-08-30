@@ -25,7 +25,8 @@ class Encoder(nn.Module):
                                        Dh=Dm * 2,
                                        p=0.2)
 
-        self.norm = nn.LayerNorm(Dm) if cascade else nn.LayerNorm(Dm * 2)
+        if not cascade:
+            self.norm = nn.LayerNorm(Dm * 2)
 
     def forward(self, x, lens):
         B, T, N = x.shape
@@ -34,7 +35,6 @@ class Encoder(nn.Module):
 
         if self.cascade:
             x = self.renc(x, lens)
-            x = self.norm(x)
             x = self.tenc(x, mask)
         else:
             x = torch.cat((self.renc(x, lens), self.tenc(x, mask)), dim=-1)

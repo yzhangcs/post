@@ -13,11 +13,13 @@ class RNMTPlusEncoder(nn.Module):
         self.layers = nn.ModuleList([
             Layer(Dm, p) for _ in range(L)
         ])
+        self.norm = nn.LayerNorm(Dm)
 
     def forward(self, x, lens):
         out = x
         for layer in self.layers:
             out = layer(out, lens)
+        out = self.norm(out)
 
         return out
 
@@ -37,7 +39,7 @@ class Layer(nn.Module):
 
     def forward(self, x, lens):
         residual = x
-        # 打包数据
+
         x = pack_padded_sequence(x, lens, True)
         x, _ = self.lstm(x)
         x, _ = pad_packed_sequence(x, True)
