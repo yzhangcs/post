@@ -79,11 +79,9 @@ class Corpus(object):
         return extended_embed
 
     def load(self, fdata, charwise=False, window=1, max_len=10):
+        sentences = self.preprocess(fdata)
         x, lens, char_x, char_lens, y = [], [], [], [], []
-        # 句子按照长度从大到小有序
-        sentences = sorted(self.preprocess(fdata),
-                           key=lambda x: len(x[0]),
-                           reverse=True)
+
         for wordseq, tagseq in sentences:
             wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
             tiseq = [self.tdict.get(t, 0) for t in tagseq]
@@ -137,8 +135,8 @@ class Corpus(object):
     def preprocess(fdata):
         start = 0
         sentences = []
-        with open(fdata, 'r') as train:
-            lines = [line for line in train]
+        with open(fdata, 'r') as f:
+            lines = [line for line in f]
         for i, line in enumerate(lines):
             if len(lines[i]) <= 1:
                 splits = [l.split()[1:4:2] for l in lines[start:i]]
