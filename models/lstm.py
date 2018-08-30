@@ -13,7 +13,7 @@ from modules import CRF
 class LSTM(nn.Module):
 
     def __init__(self, vocdim, embdim, hiddim, outdim,
-                 lossfn, use_crf=False, embed=None):
+                 lossfn, embed=None, crf=False, p=0.5):
         super(LSTM, self).__init__()
 
         if embed is None:
@@ -30,11 +30,11 @@ class LSTM(nn.Module):
         # 输出层
         self.out = nn.Linear(hiddim, outdim)
         # CRF层
-        self.crf = CRF(outdim) if use_crf else None
+        self.crf = CRF(outdim) if crf else None
         # 损失函数
-        self.lossfn = lossfn if not use_crf else None
+        self.lossfn = lossfn if not crf else None
 
-        self.drop = nn.Dropout()
+        self.drop = nn.Dropout(p)
 
     def forward(self, x, lens):
         B, T, N = x.shape
@@ -42,7 +42,6 @@ class LSTM(nn.Module):
         x = self.embed(x).view(B, T, -1)
         x = self.drop(x)
 
-        # 打包数据
         x = pack_padded_sequence(x, lens, True)
         x, _ = self.lstm(x)
         x, _ = pad_packed_sequence(x, True)

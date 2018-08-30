@@ -14,13 +14,15 @@ from models import BPNN, LSTM, LSTM_CHAR, Network
 if __name__ == '__main__':
     # 解析命令参数
     parser = argparse.ArgumentParser(
-        description='Create Neural Network for POS Tagging.'
+        description='Create several models for POS Tagging.'
     )
     parser.add_argument('--model', '-m', default='default',
                         dest='model', choices=['bpnn', 'lstm', 'lstm_char'],
                         help='choose the model for POS Tagging')
-    parser.add_argument('--crf', '-c', action='store_true', default=False,
+    parser.add_argument('--crf', action='store_true', default=False,
                         dest='crf', help='use crf')
+    parser.add_argument('--prob', action='store', default=0.5, type=float,
+                        dest='prob', help='set the prob of dropout')
     parser.add_argument('--batch_size', action='store', default=50, type=int,
                         dest='batch_size', help='set the size of batch')
     parser.add_argument('--epochs', action='store', default=100, type=int,
@@ -72,8 +74,9 @@ if __name__ == '__main__':
                        hiddim=config.hiddim,
                        outdim=corpus.nt,
                        lossfn=nn.CrossEntropyLoss(),
-                       use_crf=args.crf,
-                       embed=embed)
+                       embed=embed,
+                       crf=args.crf,
+                       p=args.prob)
     elif args.model == 'lstm_char':
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}chrdim: {corpus.nc}\n"
@@ -88,8 +91,9 @@ if __name__ == '__main__':
                             hiddim=config.hiddim,
                             outdim=corpus.nt,
                             lossfn=nn.CrossEntropyLoss(),
-                            use_crf=args.crf,
-                            embed=embed)
+                            embed=embed,
+                            crf=args.crf,
+                            p=args.prob)
     elif args.model == 'bpnn':
         print(f"{'':2}window: {config.window}\n"
               f"{'':2}vocdim: {corpus.nw}\n"
@@ -102,8 +106,9 @@ if __name__ == '__main__':
                        hiddim=config.hiddim,
                        outdim=corpus.nt,
                        lossfn=nn.CrossEntropyLoss(),
-                       use_crf=args.crf,
-                       embed=embed)
+                       embed=embed,
+                       crf=args.crf,
+                       p=args.prob)
     else:
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}chrdim: {corpus.nc}\n"
@@ -116,8 +121,9 @@ if __name__ == '__main__':
                           char_hiddim=config.char_hiddim,
                           outdim=corpus.nt,
                           lossfn=nn.CrossEntropyLoss(),
-                          use_crf=args.crf,
-                          embed=embed)
+                          embed=embed,
+                          crf=args.crf,
+                          p=args.prob)
     print(f"{network}\n")
 
     # 设置数据加载器
