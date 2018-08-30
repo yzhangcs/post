@@ -20,7 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', '-m', default='default',
                         dest='model', choices=['bpnn', 'lstm', 'lstm_char'],
                         help='choose the model for POS Tagging')
-    parser.add_argument('--crf', '-c', action='store_true', default=False,
+    parser.add_argument('--crf', action='store_true', default=False,
                         dest='crf', help='use crf')
     parser.add_argument('--prob', action='store', default=0.5, type=float,
                         dest='prob', help='set the prob of dropout')

@@ -56,7 +56,6 @@ class LSTM_CHAR(nn.Module):
         x = torch.cat((x, char_x), dim=-1)
         x = self.drop(x)
 
-        # 打包数据
         x = pack_padded_sequence(x, lens, True)
         x, _ = self.wlstm(x)
         x, _ = pad_packed_sequence(x, True)

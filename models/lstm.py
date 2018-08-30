@@ -42,7 +42,6 @@ class LSTM(nn.Module):
         x = self.embed(x).view(B, T, -1)
         x = self.drop(x)
 
-        # 打包数据
         x = pack_padded_sequence(x, lens, True)
         x, _ = self.lstm(x)
         x, _ = pad_packed_sequence(x, True)
