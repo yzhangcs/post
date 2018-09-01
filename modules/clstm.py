@@ -18,6 +18,12 @@ class CharLSTM(nn.Module):
                             hidden_size=hiddim // 2,
                             batch_first=True,
                             bidirectional=True)
+        # 初始化权重
+        self.apply(self.init_weight)
+
+    def init_weight(self, m):
+        if type(m) == nn.Embedding:
+            nn.init.normal_(m.weight, mean=0, std=m.weight.size(1) ** (-0.5))
 
     def forward(self, x, lens):
         B, T = x.shape
