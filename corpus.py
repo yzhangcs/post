@@ -84,7 +84,7 @@ class Corpus(object):
 
         for wordseq, tagseq in sentences:
             wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
-            tiseq = [self.tdict.get(t, 0) for t in tagseq]
+            tiseq = [self.tdict[t] for t in tagseq]
             # 获取每个词汇的上下文
             x.append(self.get_context(wiseq, window))
             lens.append(len(tiseq))
