@@ -38,7 +38,7 @@ $ python run.py -h
 usage: run.py [-h] [--model {bpnn,lstm,lstm_char}] [--crf] [--prob PROB]
               [--batch_size BATCH_SIZE] [--epochs EPOCHS]
               [--interval INTERVAL] [--eta ETA] [--threads THREADS]
-              [--file FILE]
+              [--seed SEED] [--file FILE]
 
 Create several models for POS Tagging.
 
@@ -55,6 +55,7 @@ optional arguments:
   --eta ETA             set the learning rate of training
   --threads THREADS, -t THREADS
                         set the max num of threads
+  --seed SEED, -s SEED  set the seed for generating random numbers
   --file FILE, -f FILE  set where to store the model
 ```
 

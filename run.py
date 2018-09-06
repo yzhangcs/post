@@ -11,38 +11,40 @@ import config
 from corpus import Corpus
 from models import BPNN, LSTM, LSTM_CHAR, Network
 
-
 if __name__ == '__main__':
     # 解析命令参数
     parser = argparse.ArgumentParser(
         description='Create several models for POS Tagging.'
     )
     parser.add_argument('--model', '-m', default='default',
-                        dest='model', choices=['bpnn', 'lstm', 'lstm_char'],
+                        choices=['bpnn', 'lstm', 'lstm_char'],
                         help='choose the model for POS Tagging')
     parser.add_argument('--crf', action='store_true', default=False,
-                        dest='crf', help='use crf')
+                        help='use crf')
     parser.add_argument('--prob', action='store', default=0.5, type=float,
-                        dest='prob', help='set the prob of dropout')
+                        help='set the prob of dropout')
     parser.add_argument('--batch_size', action='store', default=50, type=int,
-                        dest='batch_size', help='set the size of batch')
+                        help='set the size of batch')
     parser.add_argument('--epochs', action='store', default=100, type=int,
-                        dest='epochs', help='set the max num of epochs')
+                        help='set the max num of epochs')
     parser.add_argument('--interval', action='store', default=10, type=int,
-                        dest='interval', help='set the max interval to stop')
+                        help='set the max interval to stop')
     parser.add_argument('--eta', action='store', default=0.001, type=float,
-                        dest='eta', help='set the learning rate of training')
+                        help='set the learning rate of training')
     parser.add_argument('--threads', '-t', action='store', default=4, type=int,
-                        dest='threads', help='set the max num of threads')
+                        help='set the max num of threads')
+    parser.add_argument('--seed', '-s', action='store', default=1, type=int,
+                        help='set the seed for generating random numbers')
     parser.add_argument('--file', '-f', action='store', default='network.pt',
-                        dest='file', help='set where to store the model')
+                        help='set where to store the model')
     args = parser.parse_args()
 
-    # 设置随机数种子
-    torch.manual_seed(1)
     # 设置最大线程数
     torch.set_num_threads(args.threads)
-    print(f"Set max num of threads to {args.threads}")
+    # 设置随机数种子
+    torch.manual_seed(args.seed)
+    print(f"Set the max num of threads to {args.threads}\n"
+          f"Set the seed for generating random numbers to {args.seed}\n")
 
     # 根据模型读取配置
     config = config.config[args.model]
@@ -63,6 +65,8 @@ if __name__ == '__main__':
           f"{'':2}size of testset: {len(testset)}\n")
 
     start = datetime.now()
+    # 设置随机数种子
+    torch.manual_seed(args.seed)
 
     print("Create Neural Network")
     if args.model == 'lstm':

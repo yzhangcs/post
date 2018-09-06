@@ -30,7 +30,7 @@ class LSTMCHARConfig(Config):
     charwise = True
 
 
-class NetworkConfig(Config):
+class DefaultConfig(Config):
     window = 1
     embdim = 100
     char_hiddim = 200
@@ -41,5 +41,5 @@ config = {
     'bpnn': BPNNConfig,
     'lstm': LSTMConfig,
     'lstm_char': LSTMCHARConfig,
-    'default': NetworkConfig,
+    'default': DefaultConfig,
 }
