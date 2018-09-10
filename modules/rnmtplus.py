@@ -5,10 +5,10 @@ import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 
-class RNMTPlusEncoder(nn.Module):
+class RNMTPlus(nn.Module):
 
     def __init__(self, L, Dm, p=0.2):
-        super(RNMTPlusEncoder, self).__init__()
+        super(RNMTPlus, self).__init__()
 
         self.layers = nn.ModuleList([
             Layer(Dm, p) for _ in range(L)

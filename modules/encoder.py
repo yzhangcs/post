@@ -3,8 +3,8 @@
 import torch
 import torch.nn as nn
 
-from .renc import RNMTPlusEncoder
-from .tenc import TransformerEncoder
+from .rnmtplus import RNMTPlus
+from .transformer import Transformer
 
 
 class Encoder(nn.Module):
@@ -14,16 +14,16 @@ class Encoder(nn.Module):
 
         self.Dm = Dm
         self.cascade = cascade
-        self.renc = RNMTPlusEncoder(L=2,
-                                    Dm=Dm,
-                                    p=0.2)
-        self.tenc = TransformerEncoder(L=3,
-                                       H=5,
-                                       Dk=Dm // 5,
-                                       Dv=Dm // 5,
-                                       Dm=Dm,
-                                       Dh=Dm * 2,
-                                       p=0.2)
+        self.renc = RNMTPlus(L=2,
+                             Dm=Dm,
+                             p=0.2)
+        self.tenc = Transformer(L=3,
+                                H=5,
+                                Dk=Dm // 5,
+                                Dv=Dm // 5,
+                                Dm=Dm,
+                                Dh=Dm * 2,
+                                p=0.2)
 
         if not cascade:
             self.norm = nn.LayerNorm(Dm * 2)

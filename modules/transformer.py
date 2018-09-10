@@ -4,10 +4,10 @@ import torch
 import torch.nn as nn
 
 
-class TransformerEncoder(nn.Module):
+class Transformer(nn.Module):
 
     def __init__(self, L, H, Dk, Dv, Dm, Dh, p=0.2):
-        super(TransformerEncoder, self).__init__()
+        super(Transformer, self).__init__()
 
         self.layers = nn.ModuleList([
             Layer(H, Dk, Dv, Dm, Dh, p) for _ in range(L)
