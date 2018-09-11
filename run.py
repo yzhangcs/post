@@ -39,12 +39,10 @@ if __name__ == '__main__':
                         help='set where to store the model')
     args = parser.parse_args()
 
-    # 设置最大线程数
-    torch.set_num_threads(args.threads)
-    # 设置随机数种子
-    torch.manual_seed(args.seed)
     print(f"Set the max num of threads to {args.threads}\n"
           f"Set the seed for generating random numbers to {args.seed}\n")
+    torch.set_num_threads(args.threads)
+    torch.manual_seed(args.seed)
 
     # 根据模型读取配置
     config = config.config[args.model]
@@ -161,4 +159,4 @@ if __name__ == '__main__':
     print(f"{'test:':<6} "
           f"Loss: {loss:.4f} "
           f"Accuracy: {tp} / {total} = {accuracy:.2%}")
-    print(f"{datetime.now() - start}s elapsed\n")
+    print(f"{datetime.now() - start}s elapsed")
