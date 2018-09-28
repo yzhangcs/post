@@ -11,29 +11,23 @@ class Config(object):
 class BPNNConfig(Config):
     window = 5
     embdim = 100
-    hiddim = 300
+    hiddim = 150
     charwise = False
 
 
 class LSTMConfig(Config):
     window = 1
     embdim = 100
-    hiddim = 300
+    hiddim = 150
     charwise = False
 
 
 class LSTMCHARConfig(Config):
     window = 1
     embdim = 100
-    char_hiddim = 200
-    hiddim = 300
-    charwise = True
-
-
-class DefaultConfig(Config):
-    window = 1
-    embdim = 100
-    char_hiddim = 200
+    char_embdim = 100
+    char_outdim = 200
+    hiddim = 150
     charwise = True
 
 
@@ -41,5 +35,4 @@ config = {
     'bpnn': BPNNConfig,
     'lstm': LSTMConfig,
     'lstm_char': LSTMCHARConfig,
-    'default': DefaultConfig,
 }

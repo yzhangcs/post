@@ -9,14 +9,14 @@ from torch.utils.data import DataLoader
 
 import config
 from corpus import Corpus
-from models import BPNN, LSTM, LSTM_CHAR, Network
+from models import BPNN, LSTM, LSTM_CHAR
 
 if __name__ == '__main__':
     # 解析命令参数
     parser = argparse.ArgumentParser(
         description='Create several models for POS Tagging.'
     )
-    parser.add_argument('--model', '-m', default='default',
+    parser.add_argument('--model', '-m', default='lstm_char',
                         choices=['bpnn', 'lstm', 'lstm_char'],
                         help='choose the model for POS Tagging')
     parser.add_argument('--crf', action='store_true', default=False,
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     # 以训练数据为基础建立语料
     corpus = Corpus(config.ftrain)
     # 用预训练词嵌入扩展语料并返回词嵌入矩阵
-    embed = corpus.extend(config.embed)
+    embed = corpus.get_embed(config.embed)
     print(corpus)
 
     print("Load the dataset")
@@ -67,7 +67,22 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
 
     print("Create Neural Network")
-    if args.model == 'lstm':
+    if args.model == 'bpnn':
+        print(f"{'':2}window: {config.window}\n"
+              f"{'':2}vocdim: {corpus.nw}\n"
+              f"{'':2}embdim: {config.embdim}\n"
+              f"{'':2}hiddim: {config.hiddim}\n"
+              f"{'':2}outdim: {corpus.nt}\n")
+        network = BPNN(window=config.window,
+                       vocdim=corpus.nw,
+                       embdim=config.embdim,
+                       hiddim=config.hiddim,
+                       outdim=corpus.nt,
+                       lossfn=nn.CrossEntropyLoss(),
+                       embed=embed,
+                       crf=args.crf,
+                       p=args.prob)
+    elif args.model == 'lstm':
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}embdim: {config.embdim}\n"
               f"{'':2}hiddim: {config.hiddim}\n"
@@ -84,49 +99,21 @@ if __name__ == '__main__':
         print(f"{'':2}vocdim: {corpus.nw}\n"
               f"{'':2}chrdim: {corpus.nc}\n"
               f"{'':2}embdim: {config.embdim}\n"
-              f"{'':2}char_hiddim: {config.char_hiddim}\n"
+              f"{'':2}char_embdim: {config.char_embdim}\n"
+              f"{'':2}char_outdim: {config.char_outdim}\n"
               f"{'':2}hiddim: {config.hiddim}\n"
               f"{'':2}outdim: {corpus.nt}\n")
         network = LSTM_CHAR(vocdim=corpus.nw,
                             chrdim=corpus.nc,
                             embdim=config.embdim,
-                            char_hiddim=config.char_hiddim,
+                            char_embdim=config.char_embdim,
+                            char_outdim=config.char_outdim,
                             hiddim=config.hiddim,
                             outdim=corpus.nt,
                             lossfn=nn.CrossEntropyLoss(),
                             embed=embed,
                             crf=args.crf,
                             p=args.prob)
-    elif args.model == 'bpnn':
-        print(f"{'':2}window: {config.window}\n"
-              f"{'':2}vocdim: {corpus.nw}\n"
-              f"{'':2}embdim: {config.embdim}\n"
-              f"{'':2}hiddim: {config.hiddim}\n"
-              f"{'':2}outdim: {corpus.nt}\n")
-        network = BPNN(window=config.window,
-                       vocdim=corpus.nw,
-                       embdim=config.embdim,
-                       hiddim=config.hiddim,
-                       outdim=corpus.nt,
-                       lossfn=nn.CrossEntropyLoss(),
-                       embed=embed,
-                       crf=args.crf,
-                       p=args.prob)
-    else:
-        print(f"{'':2}vocdim: {corpus.nw}\n"
-              f"{'':2}chrdim: {corpus.nc}\n"
-              f"{'':2}embdim: {config.embdim}\n"
-              f"{'':2}char_hiddim: {config.char_hiddim}\n"
-              f"{'':2}outdim: {corpus.nt}\n")
-        network = Network(vocdim=corpus.nw,
-                          chrdim=corpus.nc,
-                          embdim=config.embdim,
-                          char_hiddim=config.char_hiddim,
-                          outdim=corpus.nt,
-                          lossfn=nn.CrossEntropyLoss(),
-                          embed=embed,
-                          crf=args.crf,
-                          p=args.prob)
     print(f"{network}\n")
 
     # 设置数据加载器
