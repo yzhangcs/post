@@ -48,10 +48,8 @@ if __name__ == '__main__':
     config = config.config[args.model]
 
     print("Preprocess the data")
-    # 以训练数据为基础建立语料
-    corpus = Corpus(config.ftrain)
-    # 用预训练词嵌入扩展语料并返回词嵌入矩阵
-    embed = corpus.get_embed(config.embed)
+    # 建立语料
+    corpus = Corpus(config.ftrain, config.fembed)
     print(corpus)
 
     print("Load the dataset")
@@ -79,7 +77,7 @@ if __name__ == '__main__':
                        hiddim=config.hiddim,
                        outdim=corpus.nt,
                        lossfn=nn.CrossEntropyLoss(),
-                       embed=embed,
+                       embed=corpus.embed,
                        crf=args.crf,
                        p=args.prob)
     elif args.model == 'lstm':
@@ -92,7 +90,7 @@ if __name__ == '__main__':
                        hiddim=config.hiddim,
                        outdim=corpus.nt,
                        lossfn=nn.CrossEntropyLoss(),
-                       embed=embed,
+                       embed=corpus.embed,
                        crf=args.crf,
                        p=args.prob)
     elif args.model == 'lstm_char':
@@ -111,7 +109,7 @@ if __name__ == '__main__':
                             hiddim=config.hiddim,
                             outdim=corpus.nt,
                             lossfn=nn.CrossEntropyLoss(),
-                            embed=embed,
+                            embed=corpus.embed,
                             crf=args.crf,
                             p=args.prob)
     print(f"{network}\n")

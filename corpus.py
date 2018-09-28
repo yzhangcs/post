@@ -13,7 +13,7 @@ class Corpus(object):
     SOS = '<SOS>'
     EOS = '<EOS>'
 
-    def __init__(self, fdata):
+    def __init__(self, fdata, fembed=None):
         # 获取数据的句子
         self.sentences = self.preprocess(fdata)
         # 获取数据的所有不同的词汇、词性和字符
@@ -51,6 +51,9 @@ class Corpus(object):
         self.nt = len(self.tags)
         # 字符数量
         self.nc = len(self.chars)
+
+        # 预训练词嵌入
+        self.embed = self.get_embed(fembed) if fembed is not None else None
 
     def extend(self, words):
         unk_words = [w for w in words if w not in self.wdict]
