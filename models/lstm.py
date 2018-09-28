@@ -23,12 +23,12 @@ class LSTM(nn.Module):
 
         # 词嵌入LSTM层
         self.lstm = nn.LSTM(input_size=embdim,
-                            hidden_size=hiddim // 2,
+                            hidden_size=hiddim,
                             batch_first=True,
                             bidirectional=True)
 
         # 输出层
-        self.out = nn.Linear(hiddim, outdim)
+        self.out = nn.Linear(hiddim * 2, outdim)
         # CRF层
         self.crf = CRF(outdim) if crf else None
         # 损失函数
@@ -37,9 +37,15 @@ class LSTM(nn.Module):
         self.drop = nn.Dropout(p)
 
     def forward(self, x, lens):
-        B, T, N = x.shape
-        # 获取词嵌入向量
-        x = self.embed(x).view(B, T, -1)
+        B, T = x.shape
+        # 获取按长度有序的字序列索引
+        lens, indices = torch.sort(lens, descending=True)
+        # 获取逆序索引
+        _, inverse_indices = indices.sort()
+        # 序列按长度由大到小排列
+        x = x[indices]
+        # 获取字嵌入向量
+        x = self.embed(x)
         x = self.drop(x)
 
         x = pack_padded_sequence(x, lens, True)
@@ -47,7 +53,11 @@ class LSTM(nn.Module):
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
 
-        return self.out(x)
+        out = self.out(x)
+        # 恢复原有的顺序
+        out = out[inverse_indices]
+
+        return out
 
     def fit(self, train_loader, dev_loader, epochs, interval, eta, file):
         # 记录迭代时间
@@ -89,11 +99,11 @@ class LSTM(nn.Module):
         self.train()
 
         # 从加载器中加载数据进行训练
-        for x, lens, y in loader:
+        for x, y, lens in loader:
             # 清除梯度
             self.optimizer.zero_grad()
             # 获取掩码
-            mask = torch.arange(y.size(1)) < lens.unsqueeze(-1)
+            mask = x.gt(0)
             target = y[mask]
 
             out = self(x, lens)
@@ -116,9 +126,8 @@ class LSTM(nn.Module):
 
         loss, tp, total = 0, 0, 0
         # 从加载器中加载数据进行评价
-        for x, lens, y in loader:
-            # 获取掩码
-            mask = torch.arange(y.size(1)) < lens.unsqueeze(-1)
+        for x, y, lens in loader:
+            mask = x.gt(0)
             target = y[mask]
 
             out = self.forward(x, lens)
@@ -138,14 +147,10 @@ class LSTM(nn.Module):
         return loss, tp, total, tp / total
 
     def collate_fn(self, data):
-        # 按照长度调整顺序
-        data.sort(key=lambda x: x[1], reverse=True)
-        x, lens, y = zip(*data)
-        # 获取句子的最大长度
-        max_len = lens[0]
-        # 去除无用的填充数据
+        x, y, lens = zip(*data)
+        max_len = max(lens)
         x = torch.stack(x)[:, :max_len]
-        lens = torch.tensor(lens)
         y = torch.stack(y)[:, :max_len]
+        lens = torch.tensor(lens)
 
-        return x, lens, y
+        return x, y, lens

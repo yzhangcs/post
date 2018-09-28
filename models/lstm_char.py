@@ -45,7 +45,7 @@ class LSTM_CHAR(nn.Module):
     def forward(self, x, char_x, lens):
         B, T = x.shape
         # 获取掩码
-        mask = torch.arange(T) < lens.unsqueeze(-1)
+        mask = x.gt(0)
         # 获取词嵌入向量
         x = self.embed(x)
 
@@ -53,8 +53,12 @@ class LSTM_CHAR(nn.Module):
         char_x = self.clstm(char_x[mask])
         char_x = pad_sequence(torch.split(char_x, lens.tolist()), True)
 
-        # 拼接词表示和字表示
-        x = torch.cat((x, char_x), dim=-1)
+        # 获取按长度有序的字序列索引
+        lens, indices = torch.sort(lens, descending=True)
+        # 获取逆序索引
+        _, inverse_indices = indices.sort()
+        # 获取按长度由大到小排列的词表示与字表示的拼接
+        x = torch.cat((x, char_x), dim=-1)[indices]
         x = self.drop(x)
 
         x = pack_padded_sequence(x, lens, True)
@@ -62,7 +66,11 @@ class LSTM_CHAR(nn.Module):
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
 
-        return self.out(x)
+        out = self.out(x)
+        # 恢复原有的顺序
+        out = out[inverse_indices]
+
+        return out
 
     def fit(self, train_loader, dev_loader, epochs, interval, eta, file):
         # 记录迭代时间
@@ -152,9 +160,8 @@ class LSTM_CHAR(nn.Module):
         return loss, tp, total, tp / total
 
     def collate_fn(self, data):
-        data.sort(key=lambda x: x[-1], reverse=True)
         x, y, char_x, lens = zip(*data)
-        max_len = lens[0]
+        max_len = max(lens)
         x = torch.stack(x)[:, :max_len]
         y = torch.stack(y)[:, :max_len]
         char_x = torch.stack(char_x)[:, :max_len]
