@@ -9,9 +9,9 @@ from utils import init_embedding
 
 class Corpus(object):
     PAD = '<PAD>'
+    UNK = '<UNK>'
     SOS = '<SOS>'
     EOS = '<EOS>'
-    UNK = '<UNK>'
 
     def __init__(self, fdata):
         # 获取数据的句子

@@ -81,7 +81,7 @@ class BPNN(nn.Module):
         self.train()
 
         # 从加载器中加载数据进行训练
-        for x, lens, y in loader:
+        for x, y, lens in loader:
             # 清除梯度
             self.optimizer.zero_grad()
             # 获取掩码
@@ -108,8 +108,7 @@ class BPNN(nn.Module):
 
         loss, tp, total = 0, 0, 0
         # 从加载器中加载数据进行评价
-        for x, lens, y in loader:
-            # 获取掩码
+        for x, y, lens in loader:
             mask = torch.arange(y.size(1)) < lens.unsqueeze(-1)
             target = y[mask]
 
@@ -130,12 +129,10 @@ class BPNN(nn.Module):
         return loss, tp, total, tp / total
 
     def collate_fn(self, data):
-        x, lens, y = zip(*data)
-        # 获取句子的最大长度
+        x, y, lens = zip(*data)
         max_len = max(lens)
-        # 去除无用的填充数据
         x = torch.stack(x)[:, :max_len]
-        lens = torch.tensor(lens)
         y = torch.stack(y)[:, :max_len]
+        lens = torch.tensor(lens)
 
-        return x, lens, y
+        return x, y, lens
