@@ -12,11 +12,20 @@ class CRF(nn.Module):
         # 不同的词性个数
         self.nt = nt
         # 句间迁移(FROM->TO)
-        self.trans = nn.Parameter(torch.randn(nt, nt) / nt ** 0.5)
+        self.trans = nn.Parameter(torch.Tensor(nt, nt))
         # 句首迁移
-        self.strans = nn.Parameter(torch.randn(nt) / nt ** 0.5)
+        self.strans = nn.Parameter(torch.Tensor(nt))
         # 句尾迁移
-        self.etrans = nn.Parameter(torch.randn(nt) / nt ** 0.5)
+        self.etrans = nn.Parameter(torch.Tensor(nt))
+
+        # 初始化参数
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        bias = (6. / self.nt) ** 0.5
+        nn.init.uniform_(self.trans, -bias, bias)
+        nn.init.uniform_(self.strans, -bias, bias)
+        nn.init.uniform_(self.etrans, -bias, bias)
 
     def forward(self, emit, target, mask):
         T, B, N = emit.shape

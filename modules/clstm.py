@@ -7,7 +7,7 @@ from torch.nn.utils.rnn import pack_padded_sequence
 
 class CharLSTM(nn.Module):
 
-    def __init__(self, chrdim, embdim, hiddim):
+    def __init__(self, chrdim, embdim, outdim):
         super(CharLSTM, self).__init__()
 
         # 字嵌入
@@ -15,14 +15,16 @@ class CharLSTM(nn.Module):
                                   embedding_dim=embdim)
         # 字嵌入LSTM层
         self.lstm = nn.LSTM(input_size=embdim,
-                            hidden_size=hiddim // 2,
+                            hidden_size=outdim // 2,
                             batch_first=True,
                             bidirectional=True)
 
-    def forward(self, x, lens):
+    def forward(self, x):
         B, T = x.shape
+        # 获取掩码
+        mask = x.gt(0)
         # 获取按长度有序的字序列索引
-        lens, indices = lens.sort(descending=True)
+        lens, indices = torch.sort(mask.sum(dim=1), descending=True)
         # 获取逆序索引
         _, inverse_indices = indices.sort()
         # 获取单词最大长度
