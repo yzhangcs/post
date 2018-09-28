@@ -5,7 +5,7 @@ class Config(object):
     ftrain = 'data/ctb5/train.conll'
     fdev = 'data/ctb5/dev.conll'
     ftest = 'data/ctb5/test.conll'
-    embed = 'data/embed.txt'
+    fembed = 'data/embed.txt'
 
 
 class BPNNConfig(Config):
