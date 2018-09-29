@@ -18,9 +18,9 @@ class Corpus(object):
         self.sentences = self.preprocess(fdata)
         # 获取数据的所有不同的词汇、词性和字符
         self.words, self.tags, self.chars = self.parse(self.sentences)
-        # 增加句首词汇、句尾词汇和未知词汇
+        # 增加句首词汇、句尾词汇、填充词汇和未知词汇
         self.words = [self.PAD, self.UNK, self.SOS, self.EOS] + self.words
-        # 增加未知字符
+        # 增加填充字符和未知字符
         self.chars = [self.PAD, self.UNK] + self.chars
 
         # 词汇字典

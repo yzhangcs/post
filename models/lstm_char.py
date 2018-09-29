@@ -33,7 +33,7 @@ class LSTM_CHAR(nn.Module):
                              batch_first=True,
                              bidirectional=True)
 
-       # 输出层
+        # 输出层
         self.out = nn.Linear(hiddim * 2, outdim)
         # CRF层
         self.crf = CRF(outdim) if crf else None

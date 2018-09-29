@@ -38,7 +38,7 @@ class LSTM(nn.Module):
 
     def forward(self, x, lens):
         B, T = x.shape
-        # 获取字嵌入向量
+        # 获取词嵌入向量
         x = self.embed(x)
         x = self.drop(x)
 
