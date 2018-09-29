@@ -131,10 +131,10 @@ class Corpus(object):
         self.extend(words)
         # 初始化词嵌入
         embed = torch.tensor(embed, dtype=torch.float)
+        embed_indices = [self.wdict[w] for w in words]
         extended_embed = torch.Tensor(self.nw, embed.size(1))
-        indices = [self.wdict[w] for w in words]
         init_embedding(extended_embed)
-        extended_embed[indices] = embed
+        extended_embed[embed_indices] = embed
 
         return extended_embed
 

@@ -38,12 +38,6 @@ class LSTM(nn.Module):
 
     def forward(self, x, lens):
         B, T = x.shape
-        # 获取按长度有序的字序列索引
-        lens, indices = torch.sort(lens, descending=True)
-        # 获取逆序索引
-        _, inverse_indices = indices.sort()
-        # 序列按长度由大到小排列
-        x = x[indices]
         # 获取字嵌入向量
         x = self.embed(x)
         x = self.drop(x)
@@ -53,11 +47,7 @@ class LSTM(nn.Module):
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
 
-        out = self.out(x)
-        # 恢复原有的顺序
-        out = out[inverse_indices]
-
-        return out
+        return self.out(x)
 
     def fit(self, train_loader, dev_loader, epochs, interval, eta, file):
         # 记录迭代时间
@@ -147,8 +137,10 @@ class LSTM(nn.Module):
         return loss, tp, total, tp / total
 
     def collate_fn(self, data):
-        x, y, lens = zip(*data)
-        max_len = max(lens)
+        x, y, lens = zip(
+            *sorted(data, key=lambda x: x[-1], reverse=True)
+        )
+        max_len = lens[0]
         x = torch.stack(x)[:, :max_len]
         y = torch.stack(y)[:, :max_len]
         lens = torch.tensor(lens)

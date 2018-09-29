@@ -33,7 +33,7 @@ class LSTM_CHAR(nn.Module):
                              batch_first=True,
                              bidirectional=True)
 
-        # 输出层
+       # 输出层
         self.out = nn.Linear(hiddim * 2, outdim)
         # CRF层
         self.crf = CRF(outdim) if crf else None
@@ -53,12 +53,8 @@ class LSTM_CHAR(nn.Module):
         char_x = self.clstm(char_x[mask])
         char_x = pad_sequence(torch.split(char_x, lens.tolist()), True)
 
-        # 获取按长度有序的字序列索引
-        lens, indices = torch.sort(lens, descending=True)
-        # 获取逆序索引
-        _, inverse_indices = indices.sort()
-        # 获取按长度由大到小排列的词表示与字表示的拼接
-        x = torch.cat((x, char_x), dim=-1)[indices]
+        # 获取词表示与字表示的拼接
+        x = torch.cat((x, char_x), dim=-1)
         x = self.drop(x)
 
         x = pack_padded_sequence(x, lens, True)
@@ -66,11 +62,7 @@ class LSTM_CHAR(nn.Module):
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
 
-        out = self.out(x)
-        # 恢复原有的顺序
-        out = out[inverse_indices]
-
-        return out
+        return self.out(x)
 
     def fit(self, train_loader, dev_loader, epochs, interval, eta, file):
         # 记录迭代时间
@@ -160,8 +152,10 @@ class LSTM_CHAR(nn.Module):
         return loss, tp, total, tp / total
 
     def collate_fn(self, data):
-        x, y, char_x, lens = zip(*data)
-        max_len = max(lens)
+        x, y, char_x, lens = zip(
+            *sorted(data, key=lambda x: x[-1], reverse=True)
+        )
+        max_len = lens[0]
         x = torch.stack(x)[:, :max_len]
         y = torch.stack(y)[:, :max_len]
         char_x = torch.stack(char_x)[:, :max_len]
