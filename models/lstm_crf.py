@@ -22,10 +22,10 @@ class LSTM_CRF(nn.Module):
             self.embed = nn.Embedding.from_pretrained(embed, False)
 
         # 词嵌入LSTM层
-        self.lstm_crf = nn.LSTM(input_size=n_embed,
-                                hidden_size=n_hidden,
-                                batch_first=True,
-                                bidirectional=True)
+        self.lstm = nn.LSTM(input_size=n_embed,
+                            hidden_size=n_hidden,
+                            batch_first=True,
+                            bidirectional=True)
 
         # 输出层
         self.out = nn.Linear(n_hidden * 2, n_out)
@@ -41,7 +41,7 @@ class LSTM_CRF(nn.Module):
         x = self.drop(x)
 
         x = pack_padded_sequence(x, lens, True)
-        x, _ = self.lstm_crf(x)
+        x, _ = self.lstm(x)
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
 
@@ -63,7 +63,7 @@ class LSTM_CRF(nn.Module):
 
             print(f"Epoch: {epoch} / {epochs}:")
             loss, train_acc = self.evaluate(train_loader)
-            print(f"{'train:':<6}  Loss: {loss:.4f} Accuracy: {train_acc:.2%}")
+            print(f"{'train:':<6} Loss: {loss:.4f} Accuracy: {train_acc:.2%}")
             loss, dev_acc = self.evaluate(dev_loader)
             print(f"{'dev:':<6} Loss: {loss:.4f} Accuracy: {dev_acc:.2%}")
             loss, test_acc = self.evaluate(test_loader)

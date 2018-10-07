@@ -56,7 +56,7 @@ class BPNN_CRF(nn.Module):
 
             print(f"Epoch: {epoch} / {epochs}:")
             loss, train_acc = self.evaluate(train_loader)
-            print(f"{'train:':<6}  Loss: {loss:.4f} Accuracy: {train_acc:.2%}")
+            print(f"{'train:':<6} Loss: {loss:.4f} Accuracy: {train_acc:.2%}")
             loss, dev_acc = self.evaluate(dev_loader)
             print(f"{'dev:':<6} Loss: {loss:.4f} Accuracy: {dev_acc:.2%}")
             loss, test_acc = self.evaluate(test_loader)

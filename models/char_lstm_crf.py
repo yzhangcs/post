@@ -23,15 +23,15 @@ class CHAR_LSTM_CRF(nn.Module):
         else:
             self.embed = nn.Embedding.from_pretrained(embed, False)
         # 字嵌入LSTM层
-        self.clstm = CharLSTM(n_char=n_char,
-                              n_embed=n_char_embed,
-                              n_out=n_char_out)
+        self.char_lstm = CharLSTM(n_char=n_char,
+                                  n_embed=n_char_embed,
+                                  n_out=n_char_out)
 
         # 词嵌入LSTM层
-        self.wlstm = nn.LSTM(input_size=n_embed + n_char_out,
-                             hidden_size=n_hidden,
-                             batch_first=True,
-                             bidirectional=True)
+        self.word_lstm = nn.LSTM(input_size=n_embed + n_char_out,
+                                 hidden_size=n_hidden,
+                                 batch_first=True,
+                                 bidirectional=True)
 
         # 输出层
         self.out = nn.Linear(n_hidden * 2, n_out)
@@ -48,7 +48,7 @@ class CHAR_LSTM_CRF(nn.Module):
         x = self.embed(x)
 
         # 获取字嵌入向量
-        char_x = self.clstm(char_x[mask])
+        char_x = self.char_lstm(char_x[mask])
         char_x = pad_sequence(torch.split(char_x, lens.tolist()), True)
 
         # 获取词表示与字表示的拼接
@@ -56,7 +56,7 @@ class CHAR_LSTM_CRF(nn.Module):
         x = self.drop(x)
 
         x = pack_padded_sequence(x, lens, True)
-        x, _ = self.wlstm(x)
+        x, _ = self.word_lstm(x)
         x, _ = pad_packed_sequence(x, True)
         x = self.drop(x)
 
@@ -78,7 +78,7 @@ class CHAR_LSTM_CRF(nn.Module):
 
             print(f"Epoch: {epoch} / {epochs}:")
             loss, train_acc = self.evaluate(train_loader)
-            print(f"{'train:':<6}  Loss: {loss:.4f} Accuracy: {train_acc:.2%}")
+            print(f"{'train:':<6} Loss: {loss:.4f} Accuracy: {train_acc:.2%}")
             loss, dev_acc = self.evaluate(dev_loader)
             print(f"{'dev:':<6} Loss: {loss:.4f} Accuracy: {dev_acc:.2%}")
             loss, test_acc = self.evaluate(test_loader)
