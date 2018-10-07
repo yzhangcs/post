@@ -15,9 +15,9 @@ class Corpus(object):
 
     def __init__(self, fdata, fembed=None):
         # 获取数据的句子
-        self.sentences = self.preprocess(fdata)
+        self.sents = self.preprocess(fdata)
         # 获取数据的所有不同的词汇、词性和字符
-        self.words, self.tags, self.chars = self.parse(self.sentences)
+        self.words, self.tags, self.chars = self.parse(self.sents)
         # 增加句首词汇、句尾词汇、填充词汇和未知词汇
         self.words = [self.PAD, self.UNK, self.SOS, self.EOS] + self.words
         # 增加填充字符和未知字符
@@ -31,26 +31,26 @@ class Corpus(object):
         self.cdict = {c: i for i, c in enumerate(self.chars)}
 
         # 填充词汇索引
-        self.pwi = self.wdict[self.PAD]
+        self.pad_wi = self.wdict[self.PAD]
         # 未知词汇索引
-        self.uwi = self.wdict[self.UNK]
+        self.unk_wi = self.wdict[self.UNK]
         # 句首词汇索引
-        self.swi = self.wdict[self.SOS]
+        self.sos_wi = self.wdict[self.SOS]
         # 句尾词汇索引
-        self.ewi = self.wdict[self.EOS]
+        self.sos_wi = self.wdict[self.EOS]
         # 填充字符索引
-        self.pci = self.cdict[self.PAD]
+        self.pad_ci = self.cdict[self.PAD]
         # 未知字符索引
-        self.uci = self.cdict[self.UNK]
+        self.unk_ci = self.cdict[self.UNK]
 
         # 句子数量
-        self.ns = len(self.sentences)
+        self.n_sents = len(self.sents)
         # 词汇数量
-        self.nw = len(self.words)
+        self.n_words = len(self.words)
         # 词性数量
-        self.nt = len(self.tags)
+        self.n_tags = len(self.tags)
         # 字符数量
-        self.nc = len(self.chars)
+        self.n_chars = len(self.chars)
 
         # 预训练词嵌入
         self.embed = self.get_embed(fembed) if fembed is not None else None
@@ -67,32 +67,32 @@ class Corpus(object):
         self.wdict = {w: i for i, w in enumerate(self.words)}
         self.cdict = {c: i for i, c in enumerate(self.chars)}
         # 更新索引
-        self.pwi = self.wdict[self.PAD]
-        self.uwi = self.wdict[self.UNK]
-        self.swi = self.wdict[self.SOS]
-        self.ewi = self.wdict[self.EOS]
-        self.pci = self.cdict[self.PAD]
-        self.uci = self.cdict[self.UNK]
+        self.pad_wi = self.wdict[self.PAD]
+        self.unk_wi = self.wdict[self.UNK]
+        self.sos_wi = self.wdict[self.SOS]
+        self.sos_wi = self.wdict[self.EOS]
+        self.pad_ci = self.cdict[self.PAD]
+        self.unk_ci = self.cdict[self.UNK]
         # 更新词汇和字符数
-        self.nw = len(self.words)
-        self.nc = len(self.chars)
+        self.n_words = len(self.words)
+        self.n_chars = len(self.chars)
 
-    def load(self, fdata, charwise=False, window=1, max_len=10):
+    def load(self, fdata, use_char=False, n_context=1, max_len=10):
         sentences = self.preprocess(fdata)
         x, y, char_x, lens = [], [], [], []
 
         for wordseq, tagseq in sentences:
-            wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
+            wiseq = [self.wdict.get(w, self.unk_wi) for w in wordseq]
             tiseq = [self.tdict[t] for t in tagseq]
             # 获取每个词汇的上下文
-            if window > 1:
-                x.append(self.get_context(wiseq, window))
+            if n_context > 1:
+                x.append(self.get_context(wiseq, n_context))
             else:
                 x.append(torch.tensor(wiseq, dtype=torch.long))
             y.append(torch.tensor(tiseq, dtype=torch.long))
             # 不足最大长度的部分用0填充
             char_x.append(torch.tensor([
-                [self.cdict.get(c, self.uci)
+                [self.cdict.get(c, self.unk_ci)
                  for c in w[:max_len]] + [0] * (max_len - len(w))
                 for w in wordseq
             ]))
@@ -103,18 +103,18 @@ class Corpus(object):
         char_x = pad_sequence(char_x, True)
         lens = torch.tensor(lens)
 
-        if charwise:
+        if use_char:
             dataset = TensorDataset(x, y, char_x, lens)
         else:
             dataset = TensorDataset(x, y, lens)
 
         return dataset
 
-    def get_context(self, wiseq, window):
-        half = window // 2
+    def get_context(self, wiseq, n_context):
+        half = n_context // 2
         length = len(wiseq)
-        wiseq = [self.swi] * half + wiseq + [self.ewi] * half
-        context = [wiseq[i:i + window] for i in range(length)]
+        wiseq = [self.sos_wi] * half + wiseq + [self.sos_wi] * half
+        context = [wiseq[i:i + n_context] for i in range(length)]
         context = torch.tensor(context, dtype=torch.long)
 
         return context
@@ -132,7 +132,7 @@ class Corpus(object):
         # 初始化词嵌入
         embed = torch.tensor(embed, dtype=torch.float)
         embed_indices = [self.wdict[w] for w in words]
-        extended_embed = torch.Tensor(self.nw, embed.size(1))
+        extended_embed = torch.Tensor(self.n_words, embed.size(1))
         init_embedding(extended_embed)
         extended_embed[embed_indices] = embed
 
@@ -140,10 +140,10 @@ class Corpus(object):
 
     def __repr__(self):
         info = f"{self.__class__.__name__}(\n"
-        info += f"{'':2}num of sentences: {self.ns}\n"
-        info += f"{'':2}num of words: {self.nw}\n"
-        info += f"{'':2}num of tags: {self.nt}\n"
-        info += f"{'':2}num of chars: {self.nc}\n"
+        info += f"{'':2}num of sentences: {self.n_sents}\n"
+        info += f"{'':2}num of words: {self.n_words}\n"
+        info += f"{'':2}num of tags: {self.n_tags}\n"
+        info += f"{'':2}num of chars: {self.n_chars}\n"
         info += f")\n"
 
         return info

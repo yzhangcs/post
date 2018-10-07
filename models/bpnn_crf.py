@@ -9,27 +9,26 @@ import torch.optim as optim
 from modules import CRF
 
 
-class BPNN(nn.Module):
+class BPNN_CRF(nn.Module):
 
-    def __init__(self, window, vocdim, embdim, hiddim, outdim,
-                 lossfn, embed=None, crf=False, p=0.5):
-        super(BPNN, self).__init__()
+    def __init__(self, n_context, n_vocab, n_embed, n_hidden, n_out,
+                 embed=None, drop=0.5):
+        super(BPNN_CRF, self).__init__()
 
         if embed is None:
-            self.embed = nn.Embedding(vocdim, embdim)
+            self.embed = nn.Embedding(n_vocab, n_embed)
         else:
             self.embed = nn.Embedding.from_pretrained(embed, False)
 
         # 隐藏层
-        self.hid = nn.Sequential(nn.Linear(embdim * window, hiddim), nn.ReLU())
+        self.hid = nn.Sequential(nn.Linear(n_embed * n_context, n_hidden),
+                                 nn.ReLU())
         # 输出层
-        self.out = nn.Linear(hiddim, outdim)
+        self.out = nn.Linear(n_hidden, n_out)
         # CRF层
-        self.crf = CRF(outdim) if crf else None
-        # 损失函数
-        self.lossfn = lossfn if not crf else None
+        self.crf = CRF(n_out)
 
-        self.drop = nn.Dropout(p)
+        self.drop = nn.Dropout(drop)
 
     def forward(self, x):
         B, T, N = x.shape
@@ -41,11 +40,12 @@ class BPNN(nn.Module):
 
         return self.out(x)
 
-    def fit(self, train_loader, dev_loader, epochs, interval, eta, file):
+    def fit(self, train_loader, dev_loader, test_loader,
+            epochs, interval, eta, file):
         # 记录迭代时间
         total_time = timedelta()
         # 记录最大准确率及对应的迭代次数
-        max_e, max_accuracy = 0, 0.0
+        max_e, max_acc = 0, 0.0
         # 设置优化器为Adam
         self.optimizer = optim.Adam(params=self.parameters(), lr=eta)
 
@@ -55,25 +55,23 @@ class BPNN(nn.Module):
             self.update(train_loader)
 
             print(f"Epoch: {epoch} / {epochs}:")
-            loss, tp, total, accuracy = self.evaluate(train_loader)
-            print(f"{'train:':<6} "
-                  f"Loss: {loss:.4f} "
-                  f"Accuracy: {tp} / {total} = {accuracy:.2%}")
-            loss, tp, total, accuracy = self.evaluate(dev_loader)
-            print(f"{'dev:':<6} "
-                  f"Loss: {loss:.4f} "
-                  f"Accuracy: {tp} / {total} = {accuracy:.2%}")
+            loss, train_acc = self.evaluate(train_loader)
+            print(f"{'train:':<6}  Loss: {loss:.4f} Accuracy: {train_acc:.2%}")
+            loss, dev_acc = self.evaluate(dev_loader)
+            print(f"{'dev:':<6} Loss: {loss:.4f} Accuracy: {dev_acc:.2%}")
+            loss, test_acc = self.evaluate(test_loader)
+            print(f"{'test:':<6} Loss: {loss:.4f} Accuracy: {test_acc:.2%}")
             t = datetime.now() - start
             print(f"{t}s elapsed\n")
             total_time += t
 
             # 保存效果最好的模型
-            if accuracy > max_accuracy:
+            if dev_acc > max_acc:
                 torch.save(self, file)
-                max_e, max_accuracy = epoch, accuracy
-            elif epoch - max_e > interval:
+                max_e, max_acc = epoch, dev_acc
+            elif epoch - max_e >= interval:
                 break
-        print(f"max accuracy of dev is {max_accuracy:.2%} at epoch {max_e}")
+        print(f"max accuracy of dev is {max_acc:.2%} at epoch {max_e}")
         print(f"mean time of each epoch is {total_time / epoch}s\n")
 
     def update(self, loader):
@@ -89,13 +87,9 @@ class BPNN(nn.Module):
             target = y[mask]
 
             out = self(x)
-            if self.crf is None:
-                out = out[mask]
-                loss = self.lossfn(out, target)
-            else:
-                out = out.transpose(0, 1)  # [T, B, N]
-                y, mask = y.t(), mask.t()  # [T, B]
-                loss = self.crf(out, y, mask)
+            out = out.transpose(0, 1)  # [T, B, N]
+            y, mask = y.t(), mask.t()  # [T, B]
+            loss = self.crf(out, y, mask)
             # 计算梯度
             loss.backward()
             # 更新参数
@@ -113,20 +107,15 @@ class BPNN(nn.Module):
             target = y[mask]
 
             out = self.forward(x)
-            if self.crf is None:
-                out = out[mask]
-                predict = torch.argmax(out, dim=1)
-                loss += self.lossfn(out, target)
-            else:
-                out = out.transpose(0, 1)  # [T, B, N]
-                y, mask = y.t(), mask.t()  # [T, B]
-                predict = self.crf.viterbi(out, mask)
-                loss += self.crf(out, y, mask)
+            out = out.transpose(0, 1)  # [T, B, N]
+            y, mask = y.t(), mask.t()  # [T, B]
+            predict = self.crf.viterbi(out, mask)
+            loss += self.crf(out, y, mask)
             tp += torch.sum(predict == target).item()
             total += lens.sum().item()
         loss /= len(loader)
 
-        return loss, tp, total, tp / total
+        return loss, tp / total
 
     def collate_fn(self, data):
         x, y, lens = zip(*data)
