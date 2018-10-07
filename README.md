@@ -70,7 +70,7 @@ BPNN_CRF(
 # BiLSTM+CRF
 LSTM_CRF(
   (embed): Embedding(54304, 100)
-  (lstm_crf): LSTM(100, 150, batch_first=True, bidirectional=True)
+  (lstm): LSTM(100, 150, batch_first=True, bidirectional=True)
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (drop): Dropout(p=0.5)
@@ -78,11 +78,11 @@ LSTM_CRF(
 # CHAR+BiLSTM+CRF
 CHAR_LSTM_CRF(
   (embed): Embedding(54304, 100)
-  (clstm): CharLSTM(
+  (char_lstm): CharLSTM(
     (embed): Embedding(7478, 100)
-    (lstm_crf): LSTM(100, 100, batch_first=True, bidirectional=True)
+    (lstm): LSTM(100, 100, batch_first=True, bidirectional=True)
   )
-  (wlstm): LSTM(300, 150, batch_first=True, bidirectional=True)
+  (word_lstm): LSTM(300, 150, batch_first=True, bidirectional=True)
   (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (drop): Dropout(p=0.5)
