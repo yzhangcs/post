@@ -1,25 +1,27 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import TensorDataset
 
+from utils import init_embedding
+
 
 class Corpus(object):
+    PAD = '<PAD>'
+    UNK = '<UNK>'
     SOS = '<SOS>'
     EOS = '<EOS>'
-    UNK = '<UNK>'
 
-    def __init__(self, fdata):
+    def __init__(self, fdata, fembed=None):
         # 获取数据的句子
         self.sentences = self.preprocess(fdata)
         # 获取数据的所有不同的词汇、词性和字符
         self.words, self.tags, self.chars = self.parse(self.sentences)
-        # 增加句首词汇、句尾词汇和未知词汇
-        self.words += [self.SOS, self.EOS, self.UNK]
-        # 增加未知字符
-        self.chars += [self.UNK]
+        # 增加句首词汇、句尾词汇、填充词汇和未知词汇
+        self.words = [self.PAD, self.UNK, self.SOS, self.EOS] + self.words
+        # 增加填充字符和未知字符
+        self.chars = [self.PAD, self.UNK] + self.chars
 
         # 词汇字典
         self.wdict = {w: i for i, w in enumerate(self.words)}
@@ -28,12 +30,16 @@ class Corpus(object):
         # 字符字典
         self.cdict = {c: i for i, c in enumerate(self.chars)}
 
+        # 填充词汇索引
+        self.pwi = self.wdict[self.PAD]
+        # 未知词汇索引
+        self.uwi = self.wdict[self.UNK]
         # 句首词汇索引
         self.swi = self.wdict[self.SOS]
         # 句尾词汇索引
         self.ewi = self.wdict[self.EOS]
-        # 未知词汇索引
-        self.uwi = self.wdict[self.UNK]
+        # 填充字符索引
+        self.pci = self.cdict[self.PAD]
         # 未知字符索引
         self.uci = self.cdict[self.UNK]
 
@@ -46,7 +52,74 @@ class Corpus(object):
         # 字符数量
         self.nc = len(self.chars)
 
-    def extend(self, fembed):
+        # 预训练词嵌入
+        self.embed = self.get_embed(fembed) if fembed is not None else None
+
+    def extend(self, words):
+        unk_words = [w for w in words if w not in self.wdict]
+        unk_chars = [c for c in ''.join(unk_words) if c not in self.cdict]
+        # 扩展词汇和字符
+        self.words = sorted(set(self.words + unk_words) - {self.PAD})
+        self.chars = sorted(set(self.chars + unk_chars) - {self.PAD})
+        self.words = [self.PAD] + self.words
+        self.chars = [self.PAD] + self.chars
+        # 更新字典
+        self.wdict = {w: i for i, w in enumerate(self.words)}
+        self.cdict = {c: i for i, c in enumerate(self.chars)}
+        # 更新索引
+        self.pwi = self.wdict[self.PAD]
+        self.uwi = self.wdict[self.UNK]
+        self.swi = self.wdict[self.SOS]
+        self.ewi = self.wdict[self.EOS]
+        self.pci = self.cdict[self.PAD]
+        self.uci = self.cdict[self.UNK]
+        # 更新词汇和字符数
+        self.nw = len(self.words)
+        self.nc = len(self.chars)
+
+    def load(self, fdata, charwise=False, window=1, max_len=10):
+        sentences = self.preprocess(fdata)
+        x, y, char_x, lens = [], [], [], []
+
+        for wordseq, tagseq in sentences:
+            wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
+            tiseq = [self.tdict[t] for t in tagseq]
+            # 获取每个词汇的上下文
+            if window > 1:
+                x.append(self.get_context(wiseq, window))
+            else:
+                x.append(torch.tensor(wiseq, dtype=torch.long))
+            y.append(torch.tensor(tiseq, dtype=torch.long))
+            # 不足最大长度的部分用0填充
+            char_x.append(torch.tensor([
+                [self.cdict.get(c, self.uci)
+                 for c in w[:max_len]] + [0] * (max_len - len(w))
+                for w in wordseq
+            ]))
+            lens.append(len(tiseq))
+
+        x = pad_sequence(x, True)
+        y = pad_sequence(y, True)
+        char_x = pad_sequence(char_x, True)
+        lens = torch.tensor(lens)
+
+        if charwise:
+            dataset = TensorDataset(x, y, char_x, lens)
+        else:
+            dataset = TensorDataset(x, y, lens)
+
+        return dataset
+
+    def get_context(self, wiseq, window):
+        half = window // 2
+        length = len(wiseq)
+        wiseq = [self.swi] * half + wiseq + [self.ewi] * half
+        context = [wiseq[i:i + window] for i in range(length)]
+        context = torch.tensor(context, dtype=torch.long)
+
+        return context
+
+    def get_embed(self, fembed):
         with open(fembed, 'r') as f:
             lines = [line for line in f]
         splits = [line.split() for line in lines]
@@ -54,71 +127,16 @@ class Corpus(object):
         words, embed = zip(*[
             (split[0], list(map(float, split[1:]))) for split in splits
         ])
-        unk_words = [w for w in words if w not in self.wdict]
-        unk_chars = [c for c in ''.join(unk_words) if c not in self.cdict]
-        # 扩展词汇和字符
-        self.words = sorted(set(self.words + unk_words))
-        self.chars = sorted(set(self.chars + unk_chars))
-        # 更新字典和索引
-        self.wdict = {w: i for i, w in enumerate(self.words)}
-        self.cdict = {c: i for i, c in enumerate(self.chars)}
-        self.swi = self.wdict[self.SOS]
-        self.ewi = self.wdict[self.EOS]
-        self.uwi = self.wdict[self.UNK]
-        self.uci = self.cdict[self.UNK]
-        # 更新词汇和字符数
-        self.nw = len(self.words)
-        self.nc = len(self.chars)
-        # 不在预训练矩阵中的词汇对应的词向量值随机初始化
+        # 扩充词汇
+        self.extend(words)
+        # 初始化词嵌入
         embed = torch.tensor(embed, dtype=torch.float)
-        indices = [self.wdict[w] for w in words]
-        extended_embed = torch.randn(self.nw, embed.size(1))
-        extended_embed[indices] = embed
+        embed_indices = [self.wdict[w] for w in words]
+        extended_embed = torch.Tensor(self.nw, embed.size(1))
+        init_embedding(extended_embed)
+        extended_embed[embed_indices] = embed
+
         return extended_embed
-
-    def load(self, fdata, charwise=False, window=1):
-        x, lens, cx, clens, y = [], [], [], [], []
-        # 句子按照长度从大到小有序
-        sentences = sorted(self.preprocess(fdata),
-                           key=lambda x: len(x[0]),
-                           reverse=True)
-        # 获取单词最大长度
-        max_len = max(max(len(w) for w in wordseq)
-                      for wordseq, tagseq in sentences)
-        for wordseq, tagseq in sentences:
-            wiseq = [self.wdict.get(w, self.uwi) for w in wordseq]
-            tiseq = [self.tdict[t] for t in tagseq]
-            # 获取每个词汇的上下文
-            x.append(self.get_context(wiseq, window))
-            lens.append(len(tiseq))
-            # 不足最大长度的部分用0填充
-            cx.append(torch.tensor([
-                [self.cdict.get(c, self.uci)
-                 for c in w] + [0] * (max_len - len(w))
-                for w in wordseq
-            ]))
-            clens.append(torch.tensor([len(w) for w in wordseq],
-                                      dtype=torch.long))
-            y.append(torch.tensor([ti for ti in tiseq], dtype=torch.long))
-
-        x = pad_sequence(x, True)
-        lens = torch.tensor(lens)
-        cx = pad_sequence(cx, True)
-        clens = pad_sequence(clens, True)
-        y = pad_sequence(y, True, padding_value=-1)
-
-        if charwise:
-            dataset = TensorDataset(x, lens, cx, clens, y)
-        else:
-            dataset = TensorDataset(x, lens, y)
-        return dataset
-
-    def get_context(self, wiseq, window=1):
-        half = window // 2
-        length = len(wiseq)
-        wiseq = [self.swi] * half + wiseq + [self.ewi] * half
-        return torch.tensor([wiseq[i:i + window] for i in range(length)],
-                            dtype=torch.long)
 
     def __repr__(self):
         info = f"{self.__class__.__name__}(\n"
@@ -127,14 +145,15 @@ class Corpus(object):
         info += f"{'':2}num of tags: {self.nt}\n"
         info += f"{'':2}num of chars: {self.nc}\n"
         info += f")\n"
+
         return info
 
     @staticmethod
     def preprocess(fdata):
         start = 0
         sentences = []
-        with open(fdata, 'r') as train:
-            lines = [line for line in train]
+        with open(fdata, 'r') as f:
+            lines = [line for line in f]
         for i, line in enumerate(lines):
             if len(lines[i]) <= 1:
                 splits = [l.split()[1:4:2] for l in lines[start:i]]
@@ -143,12 +162,14 @@ class Corpus(object):
                 while start < len(lines) and len(lines[start]) <= 1:
                     start += 1
                 sentences.append((wordseq, tagseq))
+
         return sentences
 
     @staticmethod
     def parse(sentences):
         wordseqs, tagseqs = zip(*sentences)
-        words = sorted(set(np.hstack(wordseqs)))
-        tags = sorted(set(np.hstack(tagseqs)))
+        words = sorted(set(w for wordseq in wordseqs for w in wordseq))
+        tags = sorted(set(t for tagseq in tagseqs for t in tagseq))
         chars = sorted(set(''.join(words)))
+
         return words, tags, chars
