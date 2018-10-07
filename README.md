@@ -60,10 +60,10 @@ optional arguments:
 BPNN_CRF(
   (embed): Embedding(54304, 100)
   (hid): Sequential(
-    (0): Linear(in_features=500, out_features=150, bias=True)
+    (0): Linear(in_features=500, out_features=300, bias=True)
     (1): ReLU()
   )
-  (out): Linear(in_features=150, out_features=32, bias=True)
+  (out): Linear(in_features=300, out_features=32, bias=True)
   (crf): CRF()
   (drop): Dropout(p=0.5)
 )
