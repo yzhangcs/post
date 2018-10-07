@@ -7,15 +7,15 @@ from torch.nn.utils.rnn import pack_padded_sequence
 
 class CharLSTM(nn.Module):
 
-    def __init__(self, chrdim, embdim, outdim):
+    def __init__(self, n_char, n_embed, n_out):
         super(CharLSTM, self).__init__()
 
         # 字嵌入
-        self.embed = nn.Embedding(num_embeddings=chrdim,
-                                  embedding_dim=embdim)
+        self.embed = nn.Embedding(num_embeddings=n_char,
+                                  embedding_dim=n_embed)
         # 字嵌入LSTM层
-        self.lstm = nn.LSTM(input_size=embdim,
-                            hidden_size=outdim // 2,
+        self.lstm = nn.LSTM(input_size=n_embed,
+                            hidden_size=n_out // 2,
                             batch_first=True,
                             bidirectional=True)
 

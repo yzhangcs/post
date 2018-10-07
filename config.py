@@ -8,31 +8,31 @@ class Config(object):
     fembed = 'data/embed.txt'
 
 
-class BPNNConfig(Config):
-    window = 5
-    embdim = 100
-    hiddim = 150
-    charwise = False
+class BPNN_CRF_Config(Config):
+    n_context = 5
+    n_embed = 100
+    n_hidden = 150
+    use_char = False
 
 
-class LSTMConfig(Config):
-    window = 1
-    embdim = 100
-    hiddim = 150
-    charwise = False
+class LSTM_CRF_Config(Config):
+    n_context = 1
+    n_embed = 100
+    n_hidden = 150
+    use_char = False
 
 
-class LSTMCHARConfig(Config):
-    window = 1
-    embdim = 100
-    char_embdim = 100
-    char_outdim = 200
-    hiddim = 150
-    charwise = True
+class CHAR_LSTM_CRF_Config(Config):
+    n_context = 1
+    n_embed = 100
+    n_char_embed = 100
+    n_char_out = 200
+    n_hidden = 150
+    use_char = True
 
 
 config = {
-    'bpnn': BPNNConfig,
-    'lstm': LSTMConfig,
-    'lstm_char': LSTMCHARConfig,
+    'bpnn_crf': BPNN_CRF_Config,
+    'lstm_crf': LSTM_CRF_Config,
+    'char_lstm_crf': CHAR_LSTM_CRF_Config,
 }

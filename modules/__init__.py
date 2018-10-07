@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .clstm import CharLSTM
+from .char_lstm import CharLSTM
 from .crf import CRF
 
 
