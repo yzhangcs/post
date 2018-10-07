@@ -11,7 +11,7 @@ class Config(object):
 class BPNN_CRF_Config(Config):
     n_context = 5
     n_embed = 100
-    n_hidden = 150
+    n_hidden = 300
     use_char = False
 
 
