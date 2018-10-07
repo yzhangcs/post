@@ -6,26 +6,26 @@ import torch.nn as nn
 
 class CRF(nn.Module):
 
-    def __init__(self, nt):
+    def __init__(self, n_tags):
         super(CRF, self).__init__()
 
         # 不同的词性个数
-        self.nt = nt
+        self.n_tags = n_tags
         # 句间迁移(FROM->TO)
-        self.trans = nn.Parameter(torch.Tensor(nt, nt))
+        self.trans = nn.Parameter(torch.Tensor(n_tags, n_tags))
         # 句首迁移
-        self.strans = nn.Parameter(torch.Tensor(nt))
+        self.strans = nn.Parameter(torch.Tensor(n_tags))
         # 句尾迁移
-        self.etrans = nn.Parameter(torch.Tensor(nt))
+        self.etrans = nn.Parameter(torch.Tensor(n_tags))
 
         # 初始化参数
         self.reset_parameters()
 
     def reset_parameters(self):
-        bias = (6. / self.nt) ** 0.5
-        nn.init.uniform_(self.trans, -bias, bias)
-        nn.init.uniform_(self.strans, -bias, bias)
-        nn.init.uniform_(self.etrans, -bias, bias)
+        std = (1 / self.n_tags) ** 0.5
+        nn.init.normal_(self.trans, mean=0, std=std)
+        nn.init.normal_(self.strans, mean=0, std=std)
+        nn.init.normal_(self.etrans, mean=0, std=std)
 
     def forward(self, emit, target, mask):
         T, B, N = emit.shape
