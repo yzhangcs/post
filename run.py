@@ -74,7 +74,6 @@ if __name__ == '__main__':
                            n_embed=config.n_embed,
                            n_hidden=config.n_hidden,
                            n_out=corpus.n_tags,
-                           embed=corpus.embed,
                            drop=args.drop)
     elif args.model == 'lstm_crf':
         print(f"{'':2}n_vocab: {corpus.n_words}\n"
@@ -85,25 +84,24 @@ if __name__ == '__main__':
                            n_embed=config.n_embed,
                            n_hidden=config.n_hidden,
                            n_out=corpus.n_tags,
-                           embed=corpus.embed,
                            drop=args.drop)
     elif args.model == 'char_lstm_crf':
-        print(f"{'':2}n_vocab: {corpus.n_words}\n"
-              f"{'':2}n_embed: {config.n_embed}\n"
-              f"{'':2}n_char: {corpus.n_chars}\n"
+        print(f"{'':2}n_char: {corpus.n_chars}\n"
               f"{'':2}n_char_embed: {config.n_char_embed}\n"
               f"{'':2}n_char_out: {config.n_char_out}\n"
+              f"{'':2}n_vocab: {corpus.n_words}\n"
+              f"{'':2}n_embed: {config.n_embed}\n"
               f"{'':2}n_hidden: {config.n_hidden}\n"
               f"{'':2}n_out: {corpus.n_tags}\n")
-        network = CHAR_LSTM_CRF(n_vocab=corpus.n_words,
-                                n_embed=config.n_embed,
-                                n_char=corpus.n_chars,
+        network = CHAR_LSTM_CRF(n_char=corpus.n_chars,
                                 n_char_embed=config.n_char_embed,
                                 n_char_out=config.n_char_out,
+                                n_vocab=corpus.n_words,
+                                n_embed=config.n_embed,
                                 n_hidden=config.n_hidden,
                                 n_out=corpus.n_tags,
-                                embed=corpus.embed,
                                 drop=args.drop)
+    network.load_pretrained(corpus.embed)
     print(f"{network}\n")
 
     # 设置数据加载器
