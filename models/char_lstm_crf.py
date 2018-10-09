@@ -13,15 +13,11 @@ from modules import CRF, CharLSTM
 
 class CHAR_LSTM_CRF(nn.Module):
 
-    def __init__(self, n_vocab, n_embed, n_char,
-                 n_char_embed, n_char_out, n_hidden, n_out,
-                 embed=None, drop=0.5):
+    def __init__(self, n_char, n_char_embed, n_char_out,
+                 n_vocab, n_embed, n_hidden, n_out, drop=0.5):
         super(CHAR_LSTM_CRF, self).__init__()
 
-        if embed is None:
-            self.embed = nn.Embedding(n_vocab, n_embed)
-        else:
-            self.embed = nn.Embedding.from_pretrained(embed, False)
+        self.embed = nn.Embedding(n_vocab, n_embed)
         # 字嵌入LSTM层
         self.char_lstm = CharLSTM(n_char=n_char,
                                   n_embed=n_char_embed,
@@ -39,6 +35,9 @@ class CHAR_LSTM_CRF(nn.Module):
         self.crf = CRF(n_out)
 
         self.drop = nn.Dropout(drop)
+
+    def load_pretrained(self, embed):
+        self.embed = nn.Embedding.from_pretrained(embed, False)
 
     def forward(self, x, char_x, lens):
         B, T = x.shape
