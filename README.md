@@ -20,7 +20,7 @@ pytorch == 0.4.1
 ### Commands
 
 ```sh
-$ git clone https://github.com/zysite/post.git
+$ git clone https://github.com/yzhangcs/post.git
 $ cd post
 # eg: BiLSTM+CHAR+CRF
 $ python run.py --model=lstm_char --crf
